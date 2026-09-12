@@ -93,6 +93,7 @@ context.fetch = async (url, options) => {
   calls.push({ url, options });
   const response = responses.shift();
   if (!response) throw new Error("Mock response queue exhausted");
+  if (response instanceof Error) throw response;
   return response;
 };
 
@@ -107,11 +108,40 @@ const update = {
 await client.saveAnnotation("SaadatKhan", update, "test-token");
 
 assert.equal(calls.length, 4, "a conflict should fetch and retry once");
+assert.ok(calls.every((call) => call.options.cache === "no-store"));
 const finalBody = JSON.parse(calls[3].options.body);
 assert.equal(finalBody.sha, "new-sha");
 const savedRecords = client.parseJsonl(client.base64ToUtf8(finalBody.content));
 assert.equal(savedRecords.length, 2);
 assert.equal(savedRecords[1].sample_id, "sample_001");
 assert.equal(savedRecords[1].comment, "review");
+
+const ambiguousRecord = {
+  sample_id: "sample_002",
+  question_index: 2,
+  answer: "yes",
+  comment: "",
+  annotator: "SaadatKhan",
+  timestamp: "2026-09-12T12:01:00.000Z"
+};
+responses.push(
+  new Response(JSON.stringify({ message: "Not Found" }), {
+    status: 404,
+    headers: { "Content-Type": "application/json" }
+  }),
+  new TypeError("Failed to fetch"),
+  new Response(JSON.stringify({
+    content: client.utf8ToBase64(client.serializeJsonl([ambiguousRecord])),
+    encoding: "base64",
+    type: "file",
+    sha: "confirmed-sha"
+  }), {
+    status: 200,
+    headers: { "Content-Type": "application/json" }
+  })
+);
+const callsBeforeConfirmation = calls.length;
+await client.saveAnnotation("SaadatKhan", ambiguousRecord, "test-token");
+assert.equal(calls.length - callsBeforeConfirmation, 3, "an ambiguous save should be confirmed by refetching");
 
 console.log("GitHub client tests passed");

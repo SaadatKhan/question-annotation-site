@@ -83,6 +83,7 @@
 
     const response = await fetch(`${API_ROOT}${path}`, {
       method: options.method || "GET",
+      cache: "no-store",
       headers: {
         Accept: "application/vnd.github+json",
         Authorization: `Bearer ${token}`,
@@ -176,7 +177,22 @@
         return record;
       } catch (error) {
         const isConflict = error instanceof GitHubApiError && (error.status === 409 || error.status === 422);
-        if (!isConflict || attempt === 2) throw error;
+        if (isConflict && attempt < 2) continue;
+
+        // A dropped response can make a successful PUT look like a network failure.
+        if (!(error instanceof GitHubApiError)) {
+          try {
+            const confirmed = await getAnnotationFile(username, token);
+            const saved = confirmed.records.find(
+              (savedRecord) => String(savedRecord.sample_id) === String(record.sample_id)
+            );
+            const matches = saved && Object.keys(record).every((key) => saved[key] === record[key]);
+            if (matches) return record;
+          } catch {
+            // Preserve the original request error when confirmation is also unavailable.
+          }
+        }
+        throw error;
       }
     }
     throw new Error("The annotation could not be saved after multiple attempts.");
