@@ -515,9 +515,9 @@ textarea {
 
 .question-text {
   max-width: 78ch;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 1.08rem;
-  line-height: 1.75;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 1.02rem;
+  line-height: 1.55;
 }
 
 .question-text mark {
@@ -555,7 +555,7 @@ textarea {
 .comparison-text {
   padding: 4px 24px 22px;
   color: #3f4b49;
-  font-size: 0.98rem;
+  font-size: 1.02rem;
 }
 
 .annotation-form fieldset {
@@ -573,7 +573,7 @@ textarea {
 
 .annotation-options {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
 

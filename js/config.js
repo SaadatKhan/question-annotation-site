@@ -9,8 +9,7 @@ window.APP_CONFIG = Object.freeze({
   annotationQuestion: "Does the inserted statement fit naturally and coherently in the question?",
   annotationOptions: Object.freeze([
     Object.freeze({ value: "yes", label: "Yes" }),
-    Object.freeze({ value: "no", label: "No" }),
-    Object.freeze({ value: "unsure", label: "Unsure" })
+    Object.freeze({ value: "no", label: "No" })
   ]),
 
   tokenStorageKey: "annotation_github_token",
