@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; connect-src https://api.github.com; img-src 'self' data:; script-src 'self'; style-src 'self'; base-uri 'none'; form-action 'self'">
+  <title>Injected Question Annotation</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="login-page">
+  <main class="login-shell">
+    <section class="login-panel" aria-labelledby="login-title">
+      <div class="brand-mark" aria-hidden="true">IQ</div>
+      <p class="eyebrow">Research workspace</p>
+      <h1 id="login-title">Injected Question Annotation</h1>
+      <p class="login-copy">Connect your approved GitHub account to resume or begin annotation.</p>
+
+      <form id="login-form" novalidate>
+        <div class="field-group">
+          <label for="token">GitHub access token</label>
+          <div class="password-row">
+            <input id="token" name="token" type="password" autocomplete="off" spellcheck="false" required
+                   aria-describedby="token-help" placeholder="github_pat_...">
+            <button class="icon-button" id="toggle-token" type="button" aria-label="Show token" title="Show token">Show</button>
+          </div>
+          <p class="field-help" id="token-help">The token must have read and write access to the private results repository.</p>
+        </div>
+
+        <label class="check-row" for="remember-token">
+          <input id="remember-token" name="remember-token" type="checkbox" checked>
+          <span>Remember token on this device</span>
+        </label>
+
+        <div id="login-status" class="status" role="status" aria-live="polite"></div>
+        <button class="primary-button full-width" id="login-button" type="submit">Connect to GitHub</button>
+      </form>
+
+      <button class="text-button hidden" id="forget-token" type="button">Forget saved token</button>
+    </section>
+  </main>
+
+  <script src="js/config.js"></script>
+  <script src="js/users.js"></script>
+  <script src="js/github.js"></script>
+  <script src="js/login.js"></script>
+</body>
+</html>

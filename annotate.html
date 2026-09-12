@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; connect-src https://api.github.com; img-src 'self' data:; script-src 'self'; style-src 'self'; base-uri 'none'; form-action 'self'">
+  <title>Annotation Workspace</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="header-inner">
+      <div>
+        <p class="eyebrow">Research workspace</p>
+        <h1 id="app-title">Injected Question Annotation</h1>
+      </div>
+      <div class="account-area">
+        <span id="annotator-name" class="account-name"></span>
+        <button id="logout-button" class="secondary-button" type="button">Sign out</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="workspace-shell">
+    <section id="loading-state" class="loading-state" aria-live="polite">
+      <div class="spinner" aria-hidden="true"></div>
+      <p>Loading your annotation workspace...</p>
+    </section>
+
+    <section id="error-state" class="message-panel hidden" aria-labelledby="error-title">
+      <p class="eyebrow error-text">Unable to load</p>
+      <h2 id="error-title">The workspace could not be opened</h2>
+      <p id="error-message"></p>
+      <div class="button-row">
+        <button id="retry-button" class="primary-button" type="button">Try again</button>
+        <a class="secondary-button link-button" href="index.html">Return to sign in</a>
+      </div>
+    </section>
+
+    <div id="workspace" class="hidden">
+      <section class="progress-band" aria-label="Annotation progress">
+        <div class="progress-summary">
+          <div>
+            <span class="progress-label">Progress</span>
+            <strong id="progress-count">0 of 270 saved</strong>
+          </div>
+          <span id="progress-percent" class="progress-percent">0%</span>
+        </div>
+        <div class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="270" aria-valuenow="0">
+          <div id="progress-fill" class="progress-fill"></div>
+        </div>
+      </section>
+
+      <section id="completion-panel" class="completion-panel hidden" aria-labelledby="completion-title">
+        <p class="eyebrow success-text">Annotation complete</p>
+        <h2 id="completion-title">All questions have a saved response</h2>
+        <p>You can review any sample and update its saved annotation.</p>
+        <button id="review-button" class="primary-button" type="button">Review responses</button>
+      </section>
+
+      <section id="annotation-panel" class="annotation-panel">
+        <div class="sample-toolbar">
+          <div>
+            <span class="sample-position" id="sample-position">Sample 1 of 270</span>
+            <span class="save-state" id="save-state">Not yet saved</span>
+          </div>
+          <form id="jump-form" class="jump-form">
+            <label for="jump-input">Go to sample</label>
+            <input id="jump-input" type="number" min="1" step="1" inputmode="numeric">
+            <button class="secondary-button" type="submit">Go</button>
+          </form>
+        </div>
+
+        <div class="sample-id-row">
+          <span>Sample ID</span>
+          <code id="sample-id"></code>
+        </div>
+
+        <section class="question-section" aria-labelledby="injected-heading">
+          <h2 id="injected-heading">Injected question</h2>
+          <div id="injected-question" class="question-text"></div>
+          <ol id="question-options" class="question-options" type="A"></ol>
+        </section>
+
+        <details class="comparison-section">
+          <summary>View original question</summary>
+          <div id="original-question" class="question-text comparison-text"></div>
+        </details>
+
+        <form id="annotation-form" class="annotation-form" novalidate>
+          <fieldset id="answer-fieldset">
+            <legend id="annotation-question">Does the inserted statement fit naturally and coherently in the question?</legend>
+            <div id="annotation-options" class="annotation-options"></div>
+          </fieldset>
+
+          <div class="field-group comment-field">
+            <label for="comment">Comment <span class="optional-label">Optional</span></label>
+            <textarea id="comment" name="comment" rows="3" maxlength="2000"
+                      placeholder="Add a brief note when useful"></textarea>
+            <span class="character-count" id="comment-count">0 / 2000</span>
+          </div>
+
+          <label class="check-row flag-row" for="flag-review">
+            <input id="flag-review" name="flag-review" type="checkbox">
+            <span>Flag this sample for review</span>
+          </label>
+
+          <div id="form-message" class="status" role="status" aria-live="polite"></div>
+
+          <div class="navigation-row">
+            <button id="previous-button" class="secondary-button" type="button">Previous</button>
+            <button id="next-button" class="secondary-button" type="button">Next</button>
+            <button id="save-button" class="primary-button save-button" type="submit" disabled>Save &amp; Next</button>
+          </div>
+        </form>
+      </section>
+    </div>
+  </main>
+
+  <script src="js/config.js"></script>
+  <script src="js/users.js"></script>
+  <script src="js/github.js"></script>
+  <script src="js/annotate.js"></script>
+</body>
+</html>
