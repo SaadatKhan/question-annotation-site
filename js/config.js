@@ -5,7 +5,7 @@ window.APP_CONFIG = Object.freeze({
   annotationsDirectory: "annotations",
   questionsPath: "data/questions.json",
 
-  appTitle: "Injected Question Annotation",
+  appTitle: "Annotating Hypothetical Injections",
   annotationQuestion: "Does the inserted statement fit naturally and coherently in the question?",
   annotationOptions: Object.freeze([
     Object.freeze({ value: "yes", label: "Yes" }),

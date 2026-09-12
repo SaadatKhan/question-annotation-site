@@ -1,4 +1,4 @@
-# Injected Question Annotation
+# Annotating Hypothetical Injections
 
 A static research annotation application for 270 base-version questions. The site is hosted by GitHub Pages and writes one JSONL file per annotator to a separate private GitHub repository.
 
