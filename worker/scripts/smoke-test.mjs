@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
 const apiRoot = "https://question-annotation-api.question-annotation-site.workers.dev";
+const siteRoot = "https://saadatkhan.github.io/question-annotation-site/";
 const origin = "https://saadatkhan.github.io";
 const credentialsText = await readFile("account-credentials.txt", "utf8");
 const credentials = Array.from(credentialsText.matchAll(/Username: ([^\r\n]+)\r?\nPassword: ([^\r\n]+)/g))
@@ -52,4 +53,15 @@ const forbidden = await request("/api/admin/status", {
 });
 assert.equal(forbidden.response.status, 403, "Annotator unexpectedly accessed the admin dashboard.");
 
-console.log(`Live smoke tests passed: 5 users, ${annotations.body.annotations.length} existing admin annotations.`);
+const [indexResponse, configResponse] = await Promise.all([
+  fetch(`${siteRoot}?smoke=${Date.now()}`),
+  fetch(`${siteRoot}js/config.js?smoke=${Date.now()}`)
+]);
+assert.equal(indexResponse.status, 200, "The GitHub Pages login could not be loaded.");
+assert.equal(configResponse.status, 200, "The live site configuration could not be loaded.");
+const [indexHtml, siteConfig] = await Promise.all([indexResponse.text(), configResponse.text()]);
+assert.match(indexHtml, /id="username"/);
+assert.doesNotMatch(indexHtml, /GitHub access token/);
+assert.match(siteConfig, /question-annotation-api\.question-annotation-site\.workers\.dev/);
+
+console.log(`Live smoke tests passed: published login, 5 users, ${annotations.body.annotations.length} existing admin annotations.`);
