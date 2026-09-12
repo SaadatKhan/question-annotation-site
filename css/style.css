@@ -143,6 +143,10 @@ summary:focus-visible {
   gap: 7px;
 }
 
+.login-password-field {
+  margin-top: 16px;
+}
+
 .field-group > label,
 .jump-form label {
   font-size: 0.86rem;
@@ -917,6 +921,11 @@ textarea {
 }
 
 .status-badge.missing {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.status-badge.disabled {
   background: var(--danger-soft);
   color: var(--danger);
 }

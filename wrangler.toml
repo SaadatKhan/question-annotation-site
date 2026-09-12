@@ -1,0 +1,20 @@
+name = "question-annotation-api"
+main = "worker/src/index.js"
+compatibility_date = "2026-09-12"
+workers_dev = true
+
+[vars]
+ALLOWED_ORIGINS = "https://saadatkhan.github.io,http://localhost:8080,http://127.0.0.1:8080"
+GITHUB_OWNER = "SaadatKhan"
+GITHUB_RESULTS_REPO = "question-annotation-results"
+GITHUB_RESULTS_BRANCH = "main"
+ANNOTATIONS_DIRECTORY = "annotations"
+ACTIVITY_DIRECTORY = "activity"
+
+[[ratelimits]]
+name = "LOGIN_RATE_LIMITER"
+namespace_id = "1001"
+
+  [ratelimits.simple]
+  limit = 10
+  period = 60

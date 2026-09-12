@@ -4,3 +4,8 @@ Thumbs.db
 .vscode/
 *.log
 node_modules/
+.wrangler/
+.dev.vars
+auth-users.json
+.password-pepper
+account-credentials.txt

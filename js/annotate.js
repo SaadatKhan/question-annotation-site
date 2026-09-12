@@ -2,7 +2,7 @@
   "use strict";
 
   const config = window.APP_CONFIG;
-  const client = window.GitHubClient;
+  const client = window.AnnotationApi;
   const elements = {
     loading: document.getElementById("loading-state"),
     error: document.getElementById("error-state"),
@@ -46,17 +46,9 @@
     annotations: new Map(),
     currentIndex: 0,
     username: "",
-    token: "",
     dirty: false,
     saving: false
   };
-
-  function approvedUser(username) {
-    const key = Object.keys(window.ANNOTATION_USERS).find(
-      (candidate) => candidate.toLowerCase() === username.toLowerCase()
-    );
-    return key ? { username: key, ...window.ANNOTATION_USERS[key] } : null;
-  }
 
   function setFormMessage(message, type = "") {
     elements.formMessage.textContent = message;
@@ -68,8 +60,9 @@
     elements.workspace.classList.add("hidden");
     elements.error.classList.remove("hidden");
     let message = error.message || "An unexpected error occurred.";
-    if (error instanceof client.GitHubApiError && error.status === 401) {
-      message = "Your GitHub token is invalid or expired. Return to sign in and provide a new token.";
+    if (error instanceof client.ApiError && error.status === 401) {
+      client.clearSession();
+      message = "Your login session has expired. Return to sign in.";
     }
     elements.errorMessage.textContent = message;
   }
@@ -270,8 +263,8 @@
     setFormMessage("Saving to GitHub...");
 
     try {
-      await client.saveAnnotation(state.username, record, state.token);
-      state.annotations.set(question.id, record);
+      const savedRecord = await client.saveAnnotation(record);
+      state.annotations.set(question.id, savedRecord);
       state.dirty = false;
       updateProgress();
       setFormMessage("Saved to GitHub.", "success");
@@ -329,8 +322,7 @@
     });
     elements.logout.addEventListener("click", () => {
       if (!confirmNavigation()) return;
-      client.clearToken();
-      sessionStorage.removeItem(config.currentUserStorageKey);
+      client.clearSession();
       sessionStorage.removeItem(config.currentIndexStorageKey);
       window.location.assign("index.html");
     });
@@ -364,15 +356,20 @@
 
   async function initialize() {
     try {
-      state.token = client.getStoredToken();
-      const sessionUsername = sessionStorage.getItem(config.currentUserStorageKey) || "";
-      const user = approvedUser(sessionUsername);
-      if (!state.token || !user) {
+      if (!client.getStoredToken()) {
         window.location.replace("index.html");
         return;
       }
 
+      const [session, questionResponse] = await Promise.all([
+        client.getSession(),
+        fetch(config.questionsPath, { cache: "no-store" })
+      ]);
+      if (!questionResponse.ok) throw new Error("The questions file could not be loaded.");
+
+      const user = session.user;
       state.username = user.username;
+      sessionStorage.setItem(config.currentUserStorageKey, JSON.stringify(user));
       document.title = `${config.appTitle} - ${user.displayName}`;
       elements.appTitle.textContent = config.appTitle;
       elements.annotatorName.textContent = user.displayName;
@@ -382,17 +379,8 @@
       createAnswerOptions();
       bindEvents();
 
-      const [githubUser, questionResponse] = await Promise.all([
-        client.verifyAccess(state.token),
-        fetch(config.questionsPath, { cache: "no-store" })
-      ]);
-      if (!questionResponse.ok) throw new Error("The questions file could not be loaded.");
-      if (githubUser.login.toLowerCase() !== state.username.toLowerCase()) {
-        throw new Error("The active GitHub token does not match the signed-in annotator.");
-      }
-
       state.questions = normalizeQuestions(await questionResponse.json());
-      state.annotations = await client.loadAnnotations(state.username, state.token);
+      state.annotations = await client.loadAnnotations();
       const unansweredIndex = findFirstUnanswered();
       if (unansweredIndex === -1) {
         state.currentIndex = 0;

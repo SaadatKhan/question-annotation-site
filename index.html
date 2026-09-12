@@ -6,7 +6,7 @@
   <meta name="color-scheme" content="light">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; connect-src 'self' https://api.github.com; img-src 'self' data:; script-src 'self'; style-src 'self'; base-uri 'none'; form-action 'self'">
+        content="default-src 'self'; connect-src 'self' https://*.workers.dev http://localhost:8787; img-src 'self' data:; script-src 'self'; style-src 'self'; base-uri 'none'; form-action 'self'">
   <title>Annotating Hypothetical Injections</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
@@ -16,35 +16,37 @@
       <div class="brand-mark" aria-hidden="true">IQ</div>
       <p class="eyebrow">Annotation Workspace</p>
       <h1 id="login-title">Annotating Hypothetical Injections</h1>
-      <p class="login-copy">Connect your approved GitHub account to resume or begin annotation.</p>
+      <p class="login-copy">Sign in with the annotation account provided to you.</p>
 
       <form id="login-form" novalidate>
         <div class="field-group">
-          <label for="token">GitHub access token</label>
-          <div class="password-row">
-            <input id="token" name="token" type="password" autocomplete="off" spellcheck="false" required
-                   aria-describedby="token-help" placeholder="github_pat_...">
-            <button class="icon-button" id="toggle-token" type="button" aria-label="Show token" title="Show token">Show</button>
-          </div>
-          <p class="field-help" id="token-help">The token must have read and write access to the private results repository.</p>
+          <label for="username">Username</label>
+          <input id="username" name="username" type="text" autocomplete="username" spellcheck="false" required>
         </div>
 
-        <label class="check-row" for="remember-token">
-          <input id="remember-token" name="remember-token" type="checkbox" checked>
-          <span>Remember token on this device</span>
+        <div class="field-group login-password-field">
+          <label for="password">Password</label>
+          <div class="password-row">
+            <input id="password" name="password" type="password" autocomplete="current-password" required>
+            <button class="icon-button" id="toggle-password" type="button" aria-label="Show password" title="Show password">Show</button>
+          </div>
+        </div>
+
+        <label class="check-row" for="remember-login">
+          <input id="remember-login" name="remember-login" type="checkbox" checked>
+          <span>Remember me on this device</span>
         </label>
 
         <div id="login-status" class="status" role="status" aria-live="polite"></div>
-        <button class="primary-button full-width" id="login-button" type="submit">Connect to GitHub</button>
+        <button class="primary-button full-width" id="login-button" type="submit">Sign in</button>
       </form>
 
-      <button class="text-button hidden" id="forget-token" type="button">Forget saved token</button>
+      <button class="text-button hidden" id="forget-login" type="button">Forget saved login</button>
     </section>
   </main>
 
   <script src="js/config.js"></script>
-  <script src="js/users.js"></script>
-  <script src="js/github.js"></script>
+  <script src="js/api.js"></script>
   <script src="js/login.js"></script>
 </body>
 </html>
