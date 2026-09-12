@@ -43,6 +43,8 @@ const dashboard = await request("/api/admin/status", { headers: adminHeaders });
 assert.equal(dashboard.response.status, 200, dashboard.body.error || "Admin dashboard failed.");
 assert.equal(dashboard.body.users.length, 5);
 assert.equal(dashboard.body.rows.length, 5);
+const inProgress = dashboard.body.rows.filter((row) => row.status === "active").length;
+const notStarted = dashboard.body.rows.filter((row) => ["ready", "signed_in"].includes(row.status)).length;
 
 const annotatorLogin = await login(credentials[1]);
 assert.equal(annotatorLogin.response.status, 200, annotatorLogin.body.error || "Annotator login failed.");
@@ -64,4 +66,7 @@ assert.match(indexHtml, /id="username"/);
 assert.doesNotMatch(indexHtml, /GitHub access token/);
 assert.match(siteConfig, /question-annotation-api\.question-annotation-site\.workers\.dev/);
 
-console.log(`Live smoke tests passed: published login, 5 users, ${annotations.body.annotations.length} existing admin annotations.`);
+console.log(
+  `Live smoke tests passed: published login, 5 users, ${annotations.body.annotations.length} existing admin annotations, ` +
+  `${inProgress} in progress, ${notStarted} not started.`
+);
