@@ -11,6 +11,7 @@
     workspace: document.getElementById("workspace"),
     appTitle: document.getElementById("app-title"),
     annotatorName: document.getElementById("annotator-name"),
+    adminLink: document.getElementById("admin-link"),
     logout: document.getElementById("logout-button"),
     progressCount: document.getElementById("progress-count"),
     progressPercent: document.getElementById("progress-percent"),
@@ -375,6 +376,7 @@
       document.title = `${config.appTitle} - ${user.displayName}`;
       elements.appTitle.textContent = config.appTitle;
       elements.annotatorName.textContent = user.displayName;
+      elements.adminLink.classList.toggle("hidden", user.role !== "admin");
       elements.annotationQuestion.textContent = config.annotationQuestion;
       elements.comment.maxLength = config.maxCommentLength;
       createAnswerOptions();

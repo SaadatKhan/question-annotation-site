@@ -110,6 +110,24 @@
     return user;
   }
 
+  async function listCollaborators(token) {
+    const config = window.APP_CONFIG;
+    return request(
+      `/repos/${encodeURIComponent(config.githubOwner)}/${encodeURIComponent(config.resultsRepo)}` +
+      "/collaborators?affiliation=direct&per_page=100",
+      { token }
+    );
+  }
+
+  async function listPendingInvitations(token) {
+    const config = window.APP_CONFIG;
+    return request(
+      `/repos/${encodeURIComponent(config.githubOwner)}/${encodeURIComponent(config.resultsRepo)}` +
+      "/invitations?per_page=100",
+      { token }
+    );
+  }
+
   function annotationPath(username) {
     const config = window.APP_CONFIG;
     if (!/^[A-Za-z0-9-]+$/.test(username)) {
@@ -204,6 +222,8 @@
     storeToken,
     clearToken,
     verifyAccess,
+    listCollaborators,
+    listPendingInvitations,
     loadAnnotations,
     saveAnnotation,
     parseJsonl,

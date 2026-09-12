@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; connect-src 'self' https://api.github.com; img-src 'self' data:; script-src 'self'; style-src 'self'; base-uri 'none'; form-action 'self'">
+  <title>Admin Dashboard - Annotating Hypothetical Injections</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="header-inner admin-header-inner">
+      <div>
+        <p class="eyebrow">Admin Dashboard</p>
+        <h1>Annotating Hypothetical Injections</h1>
+      </div>
+      <div class="account-area">
+        <span id="admin-name" class="account-name"></span>
+        <a class="secondary-button link-button" href="annotate.html">Annotation workspace</a>
+        <button id="admin-logout" class="secondary-button" type="button">Sign out</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="admin-shell">
+    <section id="admin-loading" class="loading-state" aria-live="polite">
+      <div class="spinner" aria-hidden="true"></div>
+      <p>Loading annotator status...</p>
+    </section>
+
+    <section id="admin-error" class="message-panel hidden" aria-labelledby="admin-error-title">
+      <p class="eyebrow error-text">Unable to load</p>
+      <h2 id="admin-error-title">The admin dashboard could not be opened</h2>
+      <p id="admin-error-message"></p>
+      <div class="button-row">
+        <button id="admin-retry" class="primary-button" type="button">Try again</button>
+        <a class="secondary-button link-button" href="annotate.html">Return to annotations</a>
+      </div>
+    </section>
+
+    <div id="admin-workspace" class="admin-layout hidden">
+      <aside class="admin-sidebar" aria-labelledby="access-title">
+        <nav class="admin-nav" aria-label="Admin navigation">
+          <a class="admin-nav-link active" href="admin.html" aria-current="page">Overview</a>
+          <a class="admin-nav-link" href="annotate.html">Annotation workspace</a>
+        </nav>
+
+        <section class="access-section">
+          <div class="sidebar-heading">
+            <p class="eyebrow">Team</p>
+            <h2 id="access-title">Access roles</h2>
+          </div>
+          <div id="access-list" class="access-list"></div>
+        </section>
+      </aside>
+
+      <div class="admin-content">
+        <div class="admin-title-row">
+          <div>
+            <p class="eyebrow">Study status</p>
+            <h2>Annotator progress</h2>
+            <p id="admin-updated" class="admin-updated"></p>
+          </div>
+          <button id="refresh-dashboard" class="primary-button" type="button">Refresh</button>
+        </div>
+
+        <div id="admin-warning" class="permission-warning hidden" role="status"></div>
+
+        <section class="summary-grid" aria-label="Annotation summary">
+          <article class="summary-tile">
+            <span>Team members</span>
+            <strong id="summary-team">0</strong>
+          </article>
+          <article class="summary-tile">
+            <span>In progress</span>
+            <strong id="summary-active">0</strong>
+          </article>
+          <article class="summary-tile">
+            <span>Pending invites</span>
+            <strong id="summary-pending">0</strong>
+          </article>
+          <article class="summary-tile">
+            <span>Completed</span>
+            <strong id="summary-complete">0</strong>
+          </article>
+        </section>
+
+        <section class="status-section" aria-labelledby="status-table-title">
+          <div class="section-heading-row">
+            <h2 id="status-table-title">Current status</h2>
+            <span id="total-progress" class="total-progress"></span>
+          </div>
+          <div class="status-table-wrap">
+            <table class="status-table">
+              <thead>
+                <tr>
+                  <th scope="col">Annotator</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Progress</th>
+                  <th scope="col">Yes</th>
+                  <th scope="col">No</th>
+                  <th scope="col">Flagged</th>
+                  <th scope="col">Last save</th>
+                  <th scope="col"><span class="visually-hidden">Results</span></th>
+                </tr>
+              </thead>
+              <tbody id="status-table-body"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <script src="js/config.js"></script>
+  <script src="js/users.js"></script>
+  <script src="js/github.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>

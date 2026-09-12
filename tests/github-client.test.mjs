@@ -144,4 +144,21 @@ const callsBeforeConfirmation = calls.length;
 await client.saveAnnotation("SaadatKhan", ambiguousRecord, "test-token");
 assert.equal(calls.length - callsBeforeConfirmation, 3, "an ambiguous save should be confirmed by refetching");
 
+responses.push(
+  new Response(JSON.stringify([{ login: "msi1427" }]), {
+    status: 200,
+    headers: { "Content-Type": "application/json" }
+  }),
+  new Response(JSON.stringify([{ invitee: { login: "pending-user" } }]), {
+    status: 200,
+    headers: { "Content-Type": "application/json" }
+  })
+);
+const collaborators = await client.listCollaborators("admin-token");
+const invitations = await client.listPendingInvitations("admin-token");
+assert.equal(collaborators[0].login, "msi1427");
+assert.equal(invitations[0].invitee.login, "pending-user");
+assert.match(calls.at(-2).url, /\/collaborators\?affiliation=direct&per_page=100$/);
+assert.match(calls.at(-1).url, /\/invitations\?per_page=100$/);
+
 console.log("GitHub client tests passed");
