@@ -52,6 +52,8 @@ activity/<username>.json
 
 Each completed sample records three Yes/No judgments: whether the inserted sentence is hypothetical, whether it matches the displayed certainty strength, and whether it fits naturally and coherently. The optional comment is especially useful when an annotator selects No.
 
+Question access is divided into paired assignments: `Annotator1` and `Annotator2` receive samples 1-135, while `Annotator3` and `Annotator4` receive samples 136-270. Administrators receive all 270 samples. The Worker enforces these ranges in addition to the browser filtering them.
+
 Every save reads the latest annotator file, replaces the record with the same `sample_id`, and commits the updated JSONL file. GitHub write conflicts are fetched and retried twice. Older one-question records remain readable as partial annotations, but a sample counts as complete only after all three current judgments are saved.
 
 ## Initial setup

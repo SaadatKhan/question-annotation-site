@@ -114,15 +114,19 @@
 
       const progressCell = document.createElement("td");
       progressCell.className = "progress-cell";
+      const assignment = user.assignment || { start: 1, end: state.totalQuestions, total: state.totalQuestions };
       const progressText = document.createElement("strong");
-      progressText.textContent = `${summary.completed}/${state.totalQuestions}`;
+      progressText.textContent = `${summary.completed}/${assignment.total}`;
+      const assignmentRange = document.createElement("span");
+      assignmentRange.className = "assignment-range";
+      assignmentRange.textContent = `Samples ${assignment.start}-${assignment.end}`;
       const track = document.createElement("span");
       track.className = "mini-progress-track";
       const fill = document.createElement("span");
       fill.className = "mini-progress-fill";
-      fill.style.width = `${Math.round((summary.completed / state.totalQuestions) * 100)}%`;
+      fill.style.width = `${Math.round((summary.completed / assignment.total) * 100)}%`;
       track.append(fill);
-      progressCell.append(progressText, track);
+      progressCell.append(progressText, assignmentRange, track);
       row.append(progressCell);
 
       appendTextCell(row, formatTaskCounts(summary.taskCounts?.hypothetical), "task-count-cell");
@@ -169,7 +173,10 @@
       elements.summaryComplete.textContent = String(data.rows.filter((row) => row.status === "complete").length);
 
       const saved = data.rows.reduce((total, row) => total + row.summary.completed, 0);
-      const possible = state.totalQuestions * data.rows.length;
+      const possible = data.rows.reduce(
+        (total, row) => total + (row.user.assignment?.total || state.totalQuestions),
+        0
+      );
       const percentage = possible ? Math.round((saved / possible) * 100) : 0;
       elements.totalProgress.textContent = `${saved} of ${possible} total annotations (${percentage}%)`;
       elements.updated.textContent = `Updated ${new Intl.DateTimeFormat(undefined, {

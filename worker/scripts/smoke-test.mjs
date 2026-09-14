@@ -8,7 +8,7 @@ const credentialsText = await readFile("account-credentials.txt", "utf8");
 const credentials = Array.from(credentialsText.matchAll(/Username: ([^\r\n]+)\r?\nPassword: ([^\r\n]+)/g))
   .map((match) => ({ username: match[1], password: match[2] }));
 
-assert.equal(credentials.length, 5, "Expected one admin and four annotator credentials.");
+assert.equal(credentials.length, 6, "Expected two admin and four annotator credentials.");
 
 async function request(path, options = {}) {
   const response = await fetch(`${apiRoot}${path}`, {
@@ -41,8 +41,15 @@ assert.ok(Array.isArray(annotations.body.annotations));
 
 const dashboard = await request("/api/admin/status", { headers: adminHeaders });
 assert.equal(dashboard.response.status, 200, dashboard.body.error || "Admin dashboard failed.");
-assert.equal(dashboard.body.users.length, 5);
-assert.equal(dashboard.body.rows.length, 5);
+assert.equal(dashboard.body.users.length, 6);
+assert.equal(dashboard.body.rows.length, 6);
+const assignmentByUsername = new Map(dashboard.body.users.map((user) => [user.username, user.assignment]));
+assert.deepEqual(assignmentByUsername.get("Annotator1"), { start: 1, end: 135, total: 135 });
+assert.deepEqual(assignmentByUsername.get("Annotator2"), { start: 1, end: 135, total: 135 });
+assert.deepEqual(assignmentByUsername.get("Annotator3"), { start: 136, end: 270, total: 135 });
+assert.deepEqual(assignmentByUsername.get("Annotator4"), { start: 136, end: 270, total: 135 });
+assert.deepEqual(assignmentByUsername.get("SaadatKhan"), { start: 1, end: 270, total: 270 });
+assert.deepEqual(assignmentByUsername.get("KevinLybarger"), { start: 1, end: 270, total: 270 });
 const inProgress = dashboard.body.rows.filter((row) => row.status === "active").length;
 const notStarted = dashboard.body.rows.filter((row) => ["ready", "signed_in"].includes(row.status)).length;
 
@@ -67,6 +74,6 @@ assert.doesNotMatch(indexHtml, /GitHub access token/);
 assert.match(siteConfig, /question-annotation-api\.question-annotation-site\.workers\.dev/);
 
 console.log(
-  `Live smoke tests passed: published login, 5 users, ${annotations.body.annotations.length} existing admin annotations, ` +
+  `Live smoke tests passed: published login, 6 users, assigned ranges, ${annotations.body.annotations.length} existing admin annotations, ` +
   `${inProgress} in progress, ${notStarted} not started.`
 );

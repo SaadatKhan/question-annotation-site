@@ -1,5 +1,12 @@
 const API_VERSION = "2022-11-28";
 const SESSION_LIFETIME_SECONDS = 12 * 60 * 60;
+const TOTAL_QUESTIONS = 270;
+const ANNOTATOR_ASSIGNMENTS = Object.freeze({
+  annotator1: Object.freeze({ start: 1, end: 135, total: 135 }),
+  annotator2: Object.freeze({ start: 1, end: 135, total: 135 }),
+  annotator3: Object.freeze({ start: 136, end: 270, total: 135 }),
+  annotator4: Object.freeze({ start: 136, end: 270, total: 135 })
+});
 const encoder = new TextEncoder();
 
 export default {
@@ -36,7 +43,10 @@ export default {
       }
       if (route === "GET /api/annotations") {
         const file = await getAnnotationFile(session.user.username, env);
-        return json({ annotations: file.records }, 200, cors);
+        const assignment = assignmentForUser(session.user);
+        return json({
+          annotations: file.records.filter((record) => recordIsAssigned(record, assignment))
+        }, 200, cors);
       }
       if (route === "PUT /api/annotations") {
         const record = validateAnnotation(await readJson(request), session.user);
@@ -95,7 +105,25 @@ function requireAdmin(user) {
 }
 
 function publicUser(user) {
-  return { username: user.username, displayName: user.displayName, role: user.role };
+  return {
+    username: user.username,
+    displayName: user.displayName,
+    role: user.role,
+    assignment: assignmentForUser(user)
+  };
+}
+
+function assignmentForUser(user) {
+  if (user.role === "admin") return { start: 1, end: TOTAL_QUESTIONS, total: TOTAL_QUESTIONS };
+  const assignment = ANNOTATOR_ASSIGNMENTS[user.username.toLowerCase()];
+  if (!assignment) throw httpError(500, `No question assignment is configured for ${user.username}.`);
+  return { ...assignment };
+}
+
+function recordIsAssigned(record, assignment) {
+  const index = Number(record.question_index);
+  const sampleNumber = index + 1;
+  return Number.isInteger(index) && sampleNumber >= assignment.start && sampleNumber <= assignment.end;
 }
 
 function parseUsers(value) {
@@ -172,11 +200,14 @@ function validateAnnotation(body, user) {
   const sampleId = typeof body.sample_id === "string" ? body.sample_id : "";
   const comment = typeof body.comment === "string" ? body.comment.trim() : "";
   const answerFields = ["is_hypothetical", "matches_certainty_strength", "fits_naturally"];
-  if (!Number.isInteger(body.question_index) || body.question_index < 0 || body.question_index >= 270) {
+  if (!Number.isInteger(body.question_index) || body.question_index < 0 || body.question_index >= TOTAL_QUESTIONS) {
     throw httpError(400, "The question index is invalid.");
   }
   const expectedId = `sample_${String(body.question_index).padStart(3, "0")}`;
   if (sampleId !== expectedId) throw httpError(400, "The sample ID is invalid.");
+  if (!recordIsAssigned(body, assignmentForUser(user))) {
+    throw httpError(403, "This sample is outside your assigned question range.");
+  }
   if (!answerFields.every((field) => ["yes", "no"].includes(body[field]))) {
     throw httpError(400, "Answer Yes or No for all three questions.");
   }
@@ -204,11 +235,12 @@ async function adminStatus(env) {
       getActivityFile(user.username, env)
     ]);
     const activity = activityFile ? activityFile.activity : null;
-    const records = deduplicate(file.records).filter((record) => {
+    const validRecords = deduplicate(file.records).filter((record) => {
       const index = Number(record.question_index);
-      return Number.isInteger(index) && index >= 0 && index < 270 &&
+      return Number.isInteger(index) && index >= 0 && index < TOTAL_QUESTIONS &&
         String(record.sample_id) === `sample_${String(index).padStart(3, "0")}`;
     });
+    const records = validRecords.filter((record) => recordIsAssigned(record, user.assignment));
     const completeRecords = records.filter((record) => isCompleteAnnotation(record));
     const completed = completeRecords.length;
     const taskCounts = {
@@ -222,7 +254,7 @@ async function adminStatus(env) {
     }, "");
     return {
       user,
-      status: !user.enabled ? "disabled" : completed >= 270 ? "complete" : records.length > 0 ? "active" : activity ? "signed_in" : "ready",
+      status: !user.enabled ? "disabled" : completed >= user.assignment.total ? "complete" : records.length > 0 ? "active" : activity ? "signed_in" : "ready",
       summary: {
         completed,
         savedRecords: records.length,
@@ -233,7 +265,7 @@ async function adminStatus(env) {
       }
     };
   }));
-  return { users, rows, totalQuestions: 270, updatedAt: new Date().toISOString() };
+  return { users, rows, totalQuestions: TOTAL_QUESTIONS, updatedAt: new Date().toISOString() };
 }
 
 function isCompleteAnnotation(record) {

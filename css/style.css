@@ -427,7 +427,16 @@ textarea {
 }
 
 .progress-summary strong {
+  display: block;
   font-size: 0.94rem;
+}
+
+.progress-range {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 650;
 }
 
 .progress-percent {
@@ -996,7 +1005,14 @@ textarea {
 
 .progress-cell strong {
   display: block;
-  margin-bottom: 5px;
+}
+
+.assignment-range {
+  display: block;
+  margin: 2px 0 5px;
+  color: var(--muted);
+  font-size: 0.7rem;
+  white-space: nowrap;
 }
 
 .mini-progress-track {

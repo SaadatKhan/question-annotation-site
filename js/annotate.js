@@ -14,6 +14,7 @@
     adminLink: document.getElementById("admin-link"),
     logout: document.getElementById("logout-button"),
     progressCount: document.getElementById("progress-count"),
+    progressRange: document.getElementById("progress-range"),
     progressPercent: document.getElementById("progress-percent"),
     progressTrack: document.querySelector(".progress-track"),
     progressFill: document.getElementById("progress-fill"),
@@ -45,6 +46,7 @@
     annotations: new Map(),
     currentIndex: 0,
     username: "",
+    assignment: { start: 1, end: 270, total: 270 },
     dirty: false,
     saving: false
   };
@@ -79,9 +81,11 @@
         throw new Error(`Question ${index + 1} is missing its assigned certainty strength.`);
       }
       const id = String(question.id);
+      const expectedId = `sample_${String(index).padStart(3, "0")}`;
+      if (id !== expectedId) throw new Error(`Question ${index + 1} has an unexpected sample ID.`);
       if (seen.has(id)) throw new Error(`Duplicate question id: ${id}`);
       seen.add(id);
-      return { ...question, id };
+      return { ...question, id, questionIndex: index, sampleNumber: index + 1 };
     });
   }
 
@@ -232,10 +236,11 @@
     state.dirty = false;
     setFormMessage("");
 
-    elements.samplePosition.textContent = `Sample ${state.currentIndex + 1} of ${state.questions.length}`;
+    elements.samplePosition.textContent = `Sample ${question.sampleNumber} of 270`;
     elements.sampleId.textContent = question.id;
-    elements.jumpInput.max = String(state.questions.length);
-    elements.jumpInput.value = String(state.currentIndex + 1);
+    elements.jumpInput.min = String(state.assignment.start);
+    elements.jumpInput.max = String(state.assignment.end);
+    elements.jumpInput.value = String(question.sampleNumber);
 
     renderHighlightedText(elements.injectedQuestion, question.text, question.statement);
     elements.originalQuestion.textContent = question.original_text || "Original question unavailable.";
@@ -308,7 +313,7 @@
     const question = currentQuestion();
     const record = {
       sample_id: question.id,
-      question_index: state.currentIndex,
+      question_index: question.questionIndex,
       ...answers,
       comment: elements.comment.value.trim(),
       flag_for_review: elements.flag.checked,
@@ -371,12 +376,12 @@
     elements.next.addEventListener("click", () => goToQuestion(state.currentIndex + 1));
     elements.jumpForm.addEventListener("submit", (event) => {
       event.preventDefault();
-      const target = Number.parseInt(elements.jumpInput.value, 10) - 1;
-      if (!Number.isInteger(target) || target < 0 || target >= state.questions.length) {
-        setFormMessage(`Enter a sample number from 1 to ${state.questions.length}.`, "error");
+      const sampleNumber = Number.parseInt(elements.jumpInput.value, 10);
+      if (!Number.isInteger(sampleNumber) || sampleNumber < state.assignment.start || sampleNumber > state.assignment.end) {
+        setFormMessage(`Enter a sample number from ${state.assignment.start} to ${state.assignment.end}.`, "error");
         return;
       }
-      goToQuestion(target);
+      goToQuestion(sampleNumber - state.assignment.start);
     });
     elements.review.addEventListener("click", () => {
       elements.completion.classList.add("hidden");
@@ -428,7 +433,13 @@
       if (!questionResponse.ok) throw new Error("The questions file could not be loaded.");
 
       const user = session.user;
+      const assignment = user.assignment;
+      if (!assignment || !Number.isInteger(assignment.start) || !Number.isInteger(assignment.end) ||
+          !Number.isInteger(assignment.total) || assignment.total !== assignment.end - assignment.start + 1) {
+        throw new Error("Your question assignment is invalid.");
+      }
       state.username = user.username;
+      state.assignment = assignment;
       sessionStorage.setItem(config.currentUserStorageKey, JSON.stringify(user));
       document.title = `${config.appTitle} - ${user.displayName}`;
       elements.appTitle.textContent = config.appTitle;
@@ -438,7 +449,12 @@
       createAnnotationTasks();
       bindEvents();
 
-      state.questions = normalizeQuestions(await questionResponse.json());
+      const allQuestions = normalizeQuestions(await questionResponse.json());
+      state.questions = allQuestions.slice(assignment.start - 1, assignment.end);
+      if (state.questions.length !== assignment.total) throw new Error("Your assigned questions could not be loaded.");
+      elements.progressRange.textContent = assignment.total === allQuestions.length
+        ? `All samples ${assignment.start}-${assignment.end}`
+        : `Assigned samples ${assignment.start}-${assignment.end}`;
       state.annotations = await client.loadAnnotations();
       const unansweredIndex = findFirstUnanswered();
       if (unansweredIndex === -1) {
