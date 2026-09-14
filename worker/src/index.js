@@ -171,17 +171,23 @@ async function hmac(value, secret) {
 function validateAnnotation(body, user) {
   const sampleId = typeof body.sample_id === "string" ? body.sample_id : "";
   const comment = typeof body.comment === "string" ? body.comment.trim() : "";
+  const answerFields = ["is_hypothetical", "matches_certainty_strength", "fits_naturally"];
   if (!Number.isInteger(body.question_index) || body.question_index < 0 || body.question_index >= 270) {
     throw httpError(400, "The question index is invalid.");
   }
   const expectedId = `sample_${String(body.question_index).padStart(3, "0")}`;
   if (sampleId !== expectedId) throw httpError(400, "The sample ID is invalid.");
-  if (!["yes", "no"].includes(body.answer)) throw httpError(400, "Select Yes or No.");
+  if (!answerFields.every((field) => ["yes", "no"].includes(body[field]))) {
+    throw httpError(400, "Answer Yes or No for all three questions.");
+  }
   if (comment.length > 2000) throw httpError(400, "The comment is too long.");
   return {
+    schema_version: 2,
     sample_id: sampleId,
     question_index: body.question_index,
-    answer: body.answer,
+    is_hypothetical: body.is_hypothetical,
+    matches_certainty_strength: body.matches_certainty_strength,
+    fits_naturally: body.fits_naturally,
     comment,
     flag_for_review: Boolean(body.flag_for_review),
     annotator: user.username,
@@ -203,18 +209,24 @@ async function adminStatus(env) {
       return Number.isInteger(index) && index >= 0 && index < 270 &&
         String(record.sample_id) === `sample_${String(index).padStart(3, "0")}`;
     });
-    const completed = records.length;
+    const completeRecords = records.filter((record) => isCompleteAnnotation(record));
+    const completed = completeRecords.length;
+    const taskCounts = {
+      hypothetical: countTaskAnswers(records, "is_hypothetical"),
+      certainty: countTaskAnswers(records, "matches_certainty_strength"),
+      coherence: countTaskAnswers(records, "fits_naturally", "answer")
+    };
     const lastSave = records.reduce((latest, record) => {
       if (typeof record.timestamp !== "string") return latest;
       return !latest || record.timestamp > latest ? record.timestamp : latest;
     }, "");
     return {
       user,
-      status: !user.enabled ? "disabled" : completed >= 270 ? "complete" : completed > 0 ? "active" : activity ? "signed_in" : "ready",
+      status: !user.enabled ? "disabled" : completed >= 270 ? "complete" : records.length > 0 ? "active" : activity ? "signed_in" : "ready",
       summary: {
         completed,
-        yes: records.filter((record) => record.answer === "yes").length,
-        no: records.filter((record) => record.answer === "no").length,
+        savedRecords: records.length,
+        taskCounts,
         flagged: records.filter((record) => Boolean(record.flag_for_review)).length,
         lastSave,
         lastLogin: activity && typeof activity.lastLoginAt === "string" ? activity.lastLoginAt : ""
@@ -222,6 +234,19 @@ async function adminStatus(env) {
     };
   }));
   return { users, rows, totalQuestions: 270, updatedAt: new Date().toISOString() };
+}
+
+function isCompleteAnnotation(record) {
+  return ["is_hypothetical", "matches_certainty_strength", "fits_naturally"]
+    .every((field) => ["yes", "no"].includes(record[field]));
+}
+
+function countTaskAnswers(records, field, legacyField = "") {
+  return records.reduce((counts, record) => {
+    const value = record[field] || (legacyField ? record[legacyField] : "");
+    if (value === "yes" || value === "no") counts[value] += 1;
+    return counts;
+  }, { yes: 0, no: 0 });
 }
 
 async function getActivityFile(username, env) {

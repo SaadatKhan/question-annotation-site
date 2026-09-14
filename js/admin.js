@@ -85,6 +85,10 @@
     row.append(cell);
   }
 
+  function formatTaskCounts(counts) {
+    return `${counts?.yes || 0} / ${counts?.no || 0}`;
+  }
+
   function renderTable(rows) {
     elements.tableBody.replaceChildren();
     rows.forEach(({ user, summary, status: statusKey }) => {
@@ -121,14 +125,15 @@
       progressCell.append(progressText, track);
       row.append(progressCell);
 
-      appendTextCell(row, String(summary.yes), "number-cell");
-      appendTextCell(row, String(summary.no), "number-cell");
+      appendTextCell(row, formatTaskCounts(summary.taskCounts?.hypothetical), "task-count-cell");
+      appendTextCell(row, formatTaskCounts(summary.taskCounts?.certainty), "task-count-cell");
+      appendTextCell(row, formatTaskCounts(summary.taskCounts?.coherence), "task-count-cell");
       appendTextCell(row, String(summary.flagged), "number-cell");
       appendTextCell(row, formatLastSave(summary.lastSave), "last-save-cell");
       appendTextCell(row, formatLastSave(summary.lastLogin), "last-save-cell");
 
       const actionCell = document.createElement("td");
-      if (summary.completed > 0) {
+      if (summary.savedRecords > 0) {
         const link = document.createElement("a");
         link.className = "table-link";
         link.href = `https://github.com/${encodeURIComponent(config.githubOwner)}/` +

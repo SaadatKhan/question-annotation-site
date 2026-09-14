@@ -29,10 +29,9 @@
     originalQuestion: document.getElementById("original-question"),
     questionOptions: document.getElementById("question-options"),
     form: document.getElementById("annotation-form"),
-    fieldset: document.getElementById("answer-fieldset"),
-    annotationQuestion: document.getElementById("annotation-question"),
-    annotationOptions: document.getElementById("annotation-options"),
+    tasks: document.getElementById("annotation-tasks"),
     comment: document.getElementById("comment"),
+    commentGuidance: document.getElementById("comment-guidance"),
     commentCount: document.getElementById("comment-count"),
     flag: document.getElementById("flag-review"),
     formMessage: document.getElementById("form-message"),
@@ -76,6 +75,9 @@
       if (question.id === undefined || typeof question.text !== "string") {
         throw new Error(`Question ${index + 1} is missing its id or text.`);
       }
+      if (!/^C[123]$/.test(question.certainty) || typeof question.certainty_label !== "string") {
+        throw new Error(`Question ${index + 1} is missing its assigned certainty strength.`);
+      }
       const id = String(question.id);
       if (seen.has(id)) throw new Error(`Duplicate question id: ${id}`);
       seen.add(id);
@@ -83,24 +85,51 @@
     });
   }
 
-  function createAnswerOptions() {
-    elements.annotationOptions.replaceChildren();
-    config.annotationOptions.forEach((option, index) => {
-      const label = document.createElement("label");
-      label.className = "answer-option";
-      label.htmlFor = `answer-${option.value}`;
+  function createAnnotationTasks() {
+    elements.tasks.replaceChildren();
+    config.annotationTasks.forEach((task, taskIndex) => {
+      const fieldset = document.createElement("fieldset");
+      fieldset.className = "annotation-task";
+      fieldset.dataset.task = task.field;
 
-      const input = document.createElement("input");
-      input.type = "radio";
-      input.name = "answer";
-      input.id = `answer-${option.value}`;
-      input.value = option.value;
-      input.dataset.shortcut = String(index + 1);
+      const legend = document.createElement("legend");
+      const number = document.createElement("span");
+      number.className = "task-number";
+      number.textContent = `${taskIndex + 1}. `;
+      legend.append(number, document.createTextNode(task.question));
+      fieldset.append(legend);
 
-      const text = document.createElement("span");
-      text.textContent = option.label;
-      label.append(input, text);
-      elements.annotationOptions.append(label);
+      if (task.showCertainty) {
+        const context = document.createElement("div");
+        context.className = "certainty-context";
+        const contextLabel = document.createElement("span");
+        contextLabel.textContent = "Assigned certainty strength";
+        const badge = document.createElement("span");
+        badge.className = "certainty-badge";
+        badge.id = "assigned-certainty";
+        context.append(contextLabel, badge);
+        fieldset.append(context);
+      }
+
+      const options = document.createElement("div");
+      options.className = "annotation-options";
+      config.annotationOptions.forEach((option) => {
+        const inputId = `${task.field}-${option.value}`;
+        const label = document.createElement("label");
+        label.className = "answer-option";
+        label.htmlFor = inputId;
+        const input = document.createElement("input");
+        input.type = "radio";
+        input.name = task.field;
+        input.id = inputId;
+        input.value = option.value;
+        const text = document.createElement("span");
+        text.textContent = option.label;
+        label.append(input, text);
+        options.append(label);
+      });
+      fieldset.append(options);
+      elements.tasks.append(fieldset);
     });
   }
 
@@ -121,9 +150,27 @@
     container.append(mark, document.createTextNode(text.slice(index + highlight.length)));
   }
 
-  function selectedAnswer() {
-    const checked = elements.form.querySelector('input[name="answer"]:checked');
-    return checked ? checked.value : "";
+  function selectedAnswers() {
+    return Object.fromEntries(config.annotationTasks.map((task) => {
+      const checked = elements.form.querySelector(`input[name="${task.field}"]:checked`);
+      return [task.field, checked ? checked.value : ""];
+    }));
+  }
+
+  function allTasksAnswered() {
+    return Object.values(selectedAnswers()).every(Boolean);
+  }
+
+  function isCompleteAnnotation(record) {
+    return Boolean(record && config.annotationTasks.every((task) => ["yes", "no"].includes(record[task.field])));
+  }
+
+  function savedTaskAnswer(saved, field) {
+    if (!saved) return "";
+    if (field === "fits_naturally" && !saved[field] && ["yes", "no"].includes(saved.answer)) {
+      return saved.answer;
+    }
+    return saved[field] || "";
   }
 
   function currentQuestion() {
@@ -134,8 +181,17 @@
     elements.commentCount.textContent = `${elements.comment.value.length} / ${config.maxCommentLength}`;
   }
 
+  function updateCommentGuidance() {
+    const hasNo = Object.values(selectedAnswers()).includes("no");
+    elements.commentGuidance.classList.toggle("recommended", hasNo);
+    elements.commentGuidance.textContent = hasNo
+      ? "A comment is recommended because you selected No."
+      : "Please add a comment when you select No so we can understand the issue better.";
+  }
+
   function updateSaveState() {
-    const isSaved = state.annotations.has(currentQuestion().id);
+    const saved = state.annotations.get(currentQuestion().id);
+    const isSaved = isCompleteAnnotation(saved);
     elements.saveState.className = "save-state";
     if (state.dirty) {
       elements.saveState.textContent = "Unsaved changes";
@@ -143,18 +199,23 @@
     } else if (isSaved) {
       elements.saveState.textContent = "Saved";
       elements.saveState.classList.add("saved");
+    } else if (saved) {
+      elements.saveState.textContent = "Needs remaining answers";
+      elements.saveState.classList.add("unsaved");
     } else {
       elements.saveState.textContent = "Not yet saved";
     }
   }
 
   function updateSaveButton() {
-    elements.save.disabled = state.saving || !selectedAnswer();
+    elements.save.disabled = state.saving || !allTasksAnswered();
   }
 
   function updateProgress() {
     const validIds = new Set(state.questions.map((question) => question.id));
-    const completed = Array.from(state.annotations.keys()).filter((id) => validIds.has(id)).length;
+    const completed = Array.from(state.annotations.entries()).filter(
+      ([id, record]) => validIds.has(id) && isCompleteAnnotation(record)
+    ).length;
     const total = state.questions.length;
     const percent = total ? Math.round((completed / total) * 100) : 0;
     elements.progressCount.textContent = `${completed} of ${total} saved`;
@@ -187,16 +248,18 @@
     elements.questionOptions.classList.toggle("hidden", !(question.options && question.options.length));
 
     elements.form.reset();
+    const certaintyBadge = document.getElementById("assigned-certainty");
+    certaintyBadge.textContent = `${question.certainty} - ${question.certainty_label}`;
     elements.comment.value = saved && typeof saved.comment === "string" ? saved.comment : "";
     elements.flag.checked = Boolean(saved && saved.flag_for_review);
-    if (saved && saved.answer) {
-      const answerInput = Array.from(elements.form.elements.answer || []).find(
-        (input) => input.value === saved.answer
-      );
+    config.annotationTasks.forEach((task) => {
+      const answer = savedTaskAnswer(saved, task.field);
+      const answerInput = elements.form.querySelector(`input[name="${task.field}"][value="${answer}"]`);
       if (answerInput) answerInput.checked = true;
-    }
+    });
 
     updateCommentCount();
+    updateCommentGuidance();
     updateSaveState();
     updateSaveButton();
     elements.previous.disabled = state.currentIndex === 0;
@@ -219,7 +282,7 @@
   function findFirstUnanswered(startIndex = 0) {
     for (let offset = 0; offset < state.questions.length; offset += 1) {
       const index = (startIndex + offset) % state.questions.length;
-      if (!state.annotations.has(state.questions[index].id)) return index;
+      if (!isCompleteAnnotation(state.annotations.get(state.questions[index].id))) return index;
     }
     return -1;
   }
@@ -234,18 +297,19 @@
     state.dirty = true;
     updateSaveState();
     updateSaveButton();
+    updateCommentGuidance();
     setFormMessage("");
   }
 
   async function saveCurrentAnnotation() {
-    const answer = selectedAnswer();
-    if (!answer || state.saving) return;
+    const answers = selectedAnswers();
+    if (!Object.values(answers).every(Boolean) || state.saving) return;
 
     const question = currentQuestion();
     const record = {
       sample_id: question.id,
       question_index: state.currentIndex,
-      answer,
+      ...answers,
       comment: elements.comment.value.trim(),
       flag_for_review: elements.flag.checked,
       annotator: state.username,
@@ -253,7 +317,7 @@
     };
 
     state.saving = true;
-    elements.fieldset.disabled = true;
+    elements.tasks.querySelectorAll("fieldset").forEach((fieldset) => { fieldset.disabled = true; });
     elements.comment.disabled = true;
     elements.flag.disabled = true;
     elements.previous.disabled = true;
@@ -280,7 +344,7 @@
       setFormMessage(error.message || "The annotation could not be saved. Try again.", "error");
     } finally {
       state.saving = false;
-      elements.fieldset.disabled = false;
+      elements.tasks.querySelectorAll("fieldset").forEach((fieldset) => { fieldset.disabled = false; });
       elements.comment.disabled = false;
       elements.flag.disabled = false;
       elements.save.textContent = "Save & Next";
@@ -338,15 +402,11 @@
       const isTyping = tagName === "INPUT" || tagName === "TEXTAREA";
       if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
         event.preventDefault();
-        if (selectedAnswer()) elements.form.requestSubmit();
+        if (allTasksAnswered()) elements.form.requestSubmit();
         return;
       }
       if (isTyping) return;
-      const option = elements.form.querySelector(`input[data-shortcut="${event.key}"]`);
-      if (option) {
-        option.checked = true;
-        markDirty();
-      } else if (event.key === "ArrowLeft") {
+      if (event.key === "ArrowLeft") {
         goToQuestion(state.currentIndex - 1);
       } else if (event.key === "ArrowRight") {
         goToQuestion(state.currentIndex + 1);
@@ -374,9 +434,8 @@
       elements.appTitle.textContent = config.appTitle;
       elements.annotatorName.textContent = user.displayName;
       elements.adminLink.classList.toggle("hidden", user.role !== "admin");
-      elements.annotationQuestion.textContent = config.annotationQuestion;
       elements.comment.maxLength = config.maxCommentLength;
-      createAnswerOptions();
+      createAnnotationTasks();
       bindEvents();
 
       state.questions = normalizeQuestions(await questionResponse.json());

@@ -24,12 +24,20 @@ if (rows.length !== 270) {
 }
 
 const seen = new Set();
+const certaintyLabels = Object.freeze({
+  C1: "Low certainty",
+  C2: "Moderate certainty",
+  C3: "High certainty"
+});
 const questions = rows.map((row, index) => {
   if (row.source_variant !== "base") {
     throw new Error(`Source line ${index + 1} is not a base record.`);
   }
   if (row.id === undefined || !row.injected_question || !row.original_question) {
     throw new Error(`Source line ${index + 1} is missing required fields.`);
+  }
+  if (!certaintyLabels[row.certainty]) {
+    throw new Error(`Source line ${index + 1} has an unknown certainty class: ${row.certainty}.`);
   }
 
   const id = `sample_${String(row.id).padStart(3, "0")}`;
@@ -41,6 +49,8 @@ const questions = rows.map((row, index) => {
     text: row.injected_question,
     original_text: row.original_question,
     statement: row.statement || "",
+    certainty: row.certainty,
+    certainty_label: certaintyLabels[row.certainty],
     options: Array.isArray(row.options) ? row.options : []
   };
 });

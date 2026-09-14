@@ -92,16 +92,17 @@
         </details>
 
         <form id="annotation-form" class="annotation-form" novalidate>
-          <fieldset id="answer-fieldset">
-            <legend id="annotation-question">Does the inserted statement fit naturally and coherently in the question?</legend>
-            <div id="annotation-options" class="annotation-options"></div>
-          </fieldset>
+          <div id="annotation-tasks" class="annotation-tasks"></div>
 
           <div class="field-group comment-field">
             <label for="comment">Comment <span class="optional-label">Optional</span></label>
             <textarea id="comment" name="comment" rows="3" maxlength="2000"
-                      placeholder="Add a brief note when useful"></textarea>
-            <span class="character-count" id="comment-count">0 / 2000</span>
+                      aria-describedby="comment-guidance comment-count"
+                      placeholder="Explain any No response or add a brief note"></textarea>
+            <div class="comment-meta">
+              <span class="field-help" id="comment-guidance">Please add a comment when you select No so we can understand the issue better.</span>
+              <span class="character-count" id="comment-count">0 / 2000</span>
+            </div>
           </div>
 
           <label class="check-row flag-row" for="flag-review">

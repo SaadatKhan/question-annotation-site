@@ -586,10 +586,54 @@ textarea {
   padding: 0;
 }
 
+.annotation-tasks {
+  display: grid;
+  gap: 0;
+}
+
+.annotation-task {
+  padding-block: 22px !important;
+}
+
+.annotation-task:first-child {
+  padding-top: 0 !important;
+}
+
+.annotation-task + .annotation-task {
+  border-top: 1px solid var(--border);
+}
+
 .annotation-form legend {
   width: 100%;
   margin-bottom: 16px;
   font-size: 1.04rem;
+  font-weight: 800;
+}
+
+.task-number {
+  color: var(--accent);
+}
+
+.certainty-context {
+  display: flex;
+  min-height: 34px;
+  align-items: center;
+  gap: 9px;
+  margin: -5px 0 14px;
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 650;
+}
+
+.certainty-badge {
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  border: 1px solid #d8bd76;
+  border-radius: 5px;
+  padding: 3px 8px;
+  background: var(--warning-soft);
+  color: #624600;
   font-weight: 800;
 }
 
@@ -633,6 +677,22 @@ textarea {
 
 .comment-field {
   margin-top: 24px;
+}
+
+.comment-meta {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.comment-meta .field-help {
+  max-width: 620px;
+}
+
+.comment-meta .field-help.recommended {
+  color: var(--warning);
+  font-weight: 700;
 }
 
 .optional-label {
@@ -864,7 +924,7 @@ textarea {
 
 .status-table {
   width: 100%;
-  min-width: 850px;
+  min-width: 1080px;
   border-collapse: collapse;
   font-size: 0.82rem;
 }
@@ -958,6 +1018,13 @@ textarea {
 .number-cell {
   font-variant-numeric: tabular-nums;
   text-align: center !important;
+}
+
+.task-count-cell {
+  min-width: 92px;
+  font-variant-numeric: tabular-nums;
+  text-align: center !important;
+  white-space: nowrap;
 }
 
 .last-save-cell {

@@ -50,7 +50,9 @@ The first and most recent successful login are stored as:
 activity/<username>.json
 ```
 
-Every save reads the latest annotator file, replaces the record with the same `sample_id`, and commits the updated JSONL file. GitHub write conflicts are fetched and retried twice.
+Each completed sample records three Yes/No judgments: whether the inserted sentence is hypothetical, whether it matches the displayed certainty strength, and whether it fits naturally and coherently. The optional comment is especially useful when an annotator selects No.
+
+Every save reads the latest annotator file, replaces the record with the same `sample_id`, and commits the updated JSONL file. GitHub write conflicts are fetched and retried twice. Older one-question records remain readable as partial annotations, but a sample counts as complete only after all three current judgments are saved.
 
 ## Initial setup
 

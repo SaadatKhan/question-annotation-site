@@ -108,7 +108,9 @@ test("saving writes the authenticated user's JSONL file", async (context) => {
     body: JSON.stringify({
       sample_id: "sample_004",
       question_index: 4,
-      answer: "yes",
+      is_hypothetical: "yes",
+      matches_certainty_strength: "no",
+      fits_naturally: "yes",
       comment: "Looks natural",
       flag_for_review: false,
       annotator: "someone-else"
@@ -118,10 +120,65 @@ test("saving writes the authenticated user's JSONL file", async (context) => {
   assert.equal(response.status, 200);
   const saved = (await response.json()).annotation;
   assert.equal(saved.annotator, "annotator1");
+  assert.equal(saved.schema_version, 2);
+  assert.equal(saved.matches_certainty_strength, "no");
   assert.equal(calls.length, 2);
   assert.match(calls[1].url, /annotations\/annotator1\.jsonl$/);
   assert.equal(calls[1].options.headers.Authorization, "Bearer github-test-token");
   const gitBody = JSON.parse(calls[1].options.body);
   const jsonl = Buffer.from(gitBody.content, "base64").toString("utf8");
   assert.equal(JSON.parse(jsonl).annotator, "annotator1");
+});
+
+test("saving requires answers to all three annotation questions", async () => {
+  const { payload } = await login("annotator1", "a-strong-user-password");
+  const response = await worker.fetch(request("/api/annotations", {
+    method: "PUT",
+    headers: { Authorization: `Bearer ${payload.token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      sample_id: "sample_004",
+      question_index: 4,
+      is_hypothetical: "yes",
+      fits_naturally: "yes"
+    })
+  }), env);
+
+  assert.equal(response.status, 400);
+  assert.match((await response.json()).error, /all three questions/i);
+});
+
+test("admin progress counts only complete three-question records", async (context) => {
+  const { payload } = await login("SaadatKhan", "a-strong-admin-password");
+  const originalFetch = globalThis.fetch;
+  const records = [
+    { sample_id: "sample_000", question_index: 0, answer: "yes", timestamp: "2026-09-10T12:00:00.000Z" },
+    {
+      sample_id: "sample_001",
+      question_index: 1,
+      is_hypothetical: "no",
+      matches_certainty_strength: "yes",
+      fits_naturally: "yes",
+      timestamp: "2026-09-11T12:00:00.000Z"
+    }
+  ];
+  globalThis.fetch = async (url) => {
+    const requestUrl = String(url);
+    if (requestUrl.includes("annotations/SaadatKhan.jsonl")) {
+      const jsonl = `${records.map((record) => JSON.stringify(record)).join("\n")}\n`;
+      return Response.json({ type: "file", encoding: "base64", content: Buffer.from(jsonl).toString("base64"), sha: "saved" });
+    }
+    return new Response("{}", { status: 404 });
+  };
+  context.after(() => { globalThis.fetch = originalFetch; });
+
+  const response = await worker.fetch(request("/api/admin/status", {
+    headers: { Authorization: `Bearer ${payload.token}` }
+  }), env);
+  assert.equal(response.status, 200);
+  const row = (await response.json()).rows.find(({ user: listedUser }) => listedUser.username === "SaadatKhan");
+  assert.equal(row.status, "active");
+  assert.equal(row.summary.savedRecords, 2);
+  assert.equal(row.summary.completed, 1);
+  assert.deepEqual(row.summary.taskCounts.hypothetical, { yes: 0, no: 1 });
+  assert.deepEqual(row.summary.taskCounts.coherence, { yes: 2, no: 0 });
 });

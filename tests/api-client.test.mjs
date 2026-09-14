@@ -24,7 +24,12 @@ test("browser client stores sessions and sends authenticated requests", async ()
     fetch: async (url, options) => {
       calls.push({ url, options });
       if (url.endsWith("/api/login")) return Response.json({ token: "signed-token", user: { username: "test" } });
-      return Response.json({ annotations: [{ sample_id: "sample_001", answer: "yes" }] });
+      return Response.json({ annotations: [{
+        sample_id: "sample_001",
+        is_hypothetical: "yes",
+        matches_certainty_strength: "no",
+        fits_naturally: "yes"
+      }] });
     }
   });
   const source = await readFile(new URL("../js/api.js", import.meta.url), "utf8");
@@ -34,7 +39,7 @@ test("browser client stores sessions and sends authenticated requests", async ()
   const result = await api.login("test", "password");
   api.storeToken(result.token, false);
   const annotations = await api.loadAnnotations();
-  assert.equal(annotations.get("sample_001").answer, "yes");
+  assert.equal(annotations.get("sample_001").matches_certainty_strength, "no");
   assert.equal(calls[0].options.headers.Authorization, undefined);
   assert.equal(calls[1].options.headers.Authorization, "Bearer signed-token");
 });
