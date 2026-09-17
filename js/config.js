@@ -9,17 +9,24 @@ window.APP_CONFIG = Object.freeze({
   appTitle: "Annotating Hypothetical Injections",
   annotationTasks: Object.freeze([
     Object.freeze({
-      field: "is_hypothetical",
-      question: "Does the inserted sentence express a hypothetical?"
+      field: "certainty_assigned",
+      question: "Which level of certainty does the inserted sentence express?",
+      hint: "",
+      options: Object.freeze([
+        Object.freeze({ value: "C1", label: "Weak" }),
+        Object.freeze({ value: "C2", label: "Moderate" }),
+        Object.freeze({ value: "C3", label: "Strong" })
+      ])
     }),
     Object.freeze({
-      field: "matches_certainty_strength",
-      question: "Does the inserted sentence match the assigned certainty strength?",
-      showCertainty: true
+      field: "is_hypothetical",
+      question: "Does the inserted sentence present the possibility as unconfirmed, and add nothing else?",
+      hint: "Unconfirmed: proposed, not established. Nothing else: no clinical detail the question did not already give. Test: cross the sentence out; only the possibility should be lost."
     }),
     Object.freeze({
       field: "fits_naturally",
-      question: "Does the inserted sentence fit naturally and coherently in the question?"
+      question: "Does the inserted sentence read as if it belongs in this question?",
+      hint: "Check the kind of answer proposed, who is speaking, whether any source fits them, and whether the wording fits the vignette."
     })
   ]),
   annotationOptions: Object.freeze([

@@ -1200,3 +1200,316 @@ textarea {
     grid-template-columns: 1fr;
   }
 }
+
+/* Annotation workspace layout */
+.annotation-page .header-inner,
+.annotation-page .workspace-shell {
+  width: min(100% - 40px, 1560px);
+}
+
+.annotation-page .header-inner {
+  min-height: 58px;
+}
+
+.annotation-page .header-inner h1 {
+  font-size: 0.98rem;
+}
+
+.annotation-page .workspace-shell {
+  padding-block: 18px 40px;
+}
+
+.annotation-page .progress-band {
+  margin-bottom: 16px;
+}
+
+.annotation-page .progress-side {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.annotation-page .item-timer {
+  min-width: 42px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.annotation-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.annotation-sample-card,
+.annotation-rail {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.annotation-sample-card {
+  padding: 18px 22px 22px;
+}
+
+.annotation-page .sample-toolbar {
+  min-height: 0;
+  padding: 0 0 14px;
+  border-bottom: 0;
+  background: transparent;
+}
+
+.annotation-page .sample-position {
+  font-size: 0.86rem;
+}
+
+.annotation-page .jump-form {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  font-size: 0.78rem;
+}
+
+.annotation-page .jump-form input {
+  width: 65px;
+}
+
+.annotation-page .jump-form button {
+  padding: 5px 10px;
+}
+
+.annotation-page .sample-id-row {
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 0 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.annotation-page .sample-id-row code {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.annotation-page .save-state {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 650;
+  text-transform: none;
+}
+
+.annotation-page .question-section {
+  padding: 16px 0 0;
+}
+
+.annotation-page .question-section h2 {
+  margin-bottom: 10px;
+  color: var(--muted);
+  font-size: 0.74rem;
+}
+
+.annotation-page .question-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 0.96rem;
+  line-height: 1.58;
+}
+
+.annotation-page .question-text mark {
+  padding: 1px 2px;
+  border-bottom: 2px solid #dfa900;
+  border-radius: 2px;
+  background: #fde9b8;
+  color: inherit;
+}
+
+.annotation-page .question-options {
+  width: 100%;
+  gap: 3px;
+  margin: 14px 0 0;
+  padding-left: 32px;
+  font-size: 0.93rem;
+}
+
+.annotation-page .question-options li {
+  padding-left: 2px;
+  break-inside: avoid;
+}
+
+.annotation-page .comparison-section {
+  margin-top: 16px;
+  border: 0;
+  border-top: 1px dashed var(--border);
+  background: transparent;
+}
+
+.annotation-page .comparison-section summary {
+  padding: 12px 0 0;
+  font-size: 0.79rem;
+}
+
+.annotation-page .comparison-text {
+  padding: 12px 0 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.annotation-page .annotation-rail {
+  position: sticky;
+  top: 16px;
+  padding: 18px 20px;
+}
+
+.annotation-page .certainty-context {
+  min-height: 0;
+  margin: 0 0 16px;
+  font-size: 0.76rem;
+}
+
+.annotation-page .certainty-badge {
+  min-height: 25px;
+  border-color: var(--border);
+  background: var(--accent-soft);
+  color: var(--accent-hover);
+  font-size: 0.76rem;
+}
+
+.annotation-page .annotation-task {
+  padding: 0 0 15px !important;
+}
+
+.annotation-page .annotation-task + .annotation-task {
+  border-top: 0;
+}
+
+.annotation-page .annotation-form legend {
+  margin-bottom: 5px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.annotation-page .task-hint {
+  margin: 0 0 8px;
+  border-left: 3px solid #c7dfd9;
+  padding: 6px 9px;
+  background: var(--surface-subtle);
+  color: var(--muted);
+  font-size: 0.77rem;
+  line-height: 1.45;
+}
+
+.annotation-page .annotation-options {
+  display: grid;
+  width: min(100%, 280px);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.annotation-page .annotation-options.three-options {
+  width: min(100%, 420px);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.annotation-page .answer-option {
+  min-height: 34px;
+  justify-content: center;
+  padding: 4px 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.annotation-page .answer-option input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.annotation-page .answer-option:focus-within {
+  outline: 3px solid color-mix(in srgb, var(--focus) 45%, transparent);
+  outline-offset: 2px;
+}
+
+.annotation-page .answer-option:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: white;
+  box-shadow: none;
+}
+
+.annotation-page .comment-field {
+  margin-top: 0;
+}
+
+.annotation-page .comment-field label {
+  font-size: 0.87rem;
+  font-weight: 700;
+}
+
+.annotation-page textarea {
+  min-height: 54px;
+  max-width: 520px;
+  font-size: 0.85rem;
+}
+
+.annotation-page .flag-row {
+  margin: 7px 0;
+  font-size: 0.82rem;
+}
+
+.annotation-page .navigation-row {
+  grid-template-columns: auto auto minmax(140px, 200px);
+  justify-content: start;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.annotation-page .save-button {
+  min-width: 0;
+  width: 100%;
+  justify-self: start;
+}
+
+@media (max-width: 1000px) {
+  .annotation-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .annotation-page .annotation-rail {
+    position: static;
+  }
+}
+
+@media (max-width: 600px) {
+  .annotation-page .header-inner,
+  .annotation-page .workspace-shell {
+    width: min(100% - 24px, 1560px);
+  }
+
+  .annotation-page .sample-toolbar {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .annotation-page .annotation-sample-card,
+  .annotation-page .annotation-rail {
+    padding: 16px;
+  }
+
+  .annotation-page .annotation-options,
+  .annotation-page .annotation-options.three-options {
+    width: 100%;
+  }
+
+  .annotation-page .navigation-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .annotation-page .save-button {
+    grid-column: 1 / -1;
+  }
+}

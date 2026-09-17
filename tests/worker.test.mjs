@@ -109,8 +109,10 @@ test("saving writes the authenticated user's JSONL file", async (context) => {
     body: JSON.stringify({
       sample_id: "sample_004",
       question_index: 4,
+      certainty_assigned: "C2",
+      certainty_intended: "C1",
+      ms_on_item: 4300,
       is_hypothetical: "yes",
-      matches_certainty_strength: "no",
       fits_naturally: "yes",
       comment: "Looks natural",
       flag_for_review: false,
@@ -121,8 +123,9 @@ test("saving writes the authenticated user's JSONL file", async (context) => {
   assert.equal(response.status, 200);
   const saved = (await response.json()).annotation;
   assert.equal(saved.annotator, "annotator1");
-  assert.equal(saved.schema_version, 2);
-  assert.equal(saved.matches_certainty_strength, "no");
+  assert.equal(saved.schema_version, 3);
+  assert.equal(saved.certainty_assigned, "C2");
+  assert.equal(saved.ms_on_item, 4300);
   assert.equal(calls.length, 2);
   assert.match(calls[1].url, /annotations\/annotator1\.jsonl$/);
   assert.equal(calls[1].options.headers.Authorization, "Bearer github-test-token");
@@ -131,7 +134,7 @@ test("saving writes the authenticated user's JSONL file", async (context) => {
   assert.equal(JSON.parse(jsonl).annotator, "annotator1");
 });
 
-test("saving requires answers to all three annotation questions", async () => {
+test("saving requires a certainty level and both Yes/No answers", async () => {
   const { payload } = await login("annotator1", "a-strong-user-password");
   const response = await worker.fetch(request("/api/annotations", {
     method: "PUT",
@@ -139,13 +142,15 @@ test("saving requires answers to all three annotation questions", async () => {
     body: JSON.stringify({
       sample_id: "sample_004",
       question_index: 4,
+      certainty_intended: "C1",
+      ms_on_item: 4300,
       is_hypothetical: "yes",
       fits_naturally: "yes"
     })
   }), env);
 
   assert.equal(response.status, 400);
-  assert.match((await response.json()).error, /all three questions/i);
+  assert.match((await response.json()).error, /certainty level and both Yes\/No/i);
 });
 
 test("annotators cannot save outside their assigned question range", async () => {
@@ -156,8 +161,10 @@ test("annotators cannot save outside their assigned question range", async () =>
     body: JSON.stringify({
       sample_id: "sample_200",
       question_index: 200,
+      certainty_assigned: "C1",
+      certainty_intended: "C1",
+      ms_on_item: 1000,
       is_hypothetical: "yes",
-      matches_certainty_strength: "yes",
       fits_naturally: "yes"
     })
   }), env);
@@ -174,8 +181,10 @@ test("admin progress counts only complete three-question records", async (contex
     {
       sample_id: "sample_001",
       question_index: 1,
+      certainty_assigned: "C2",
+      certainty_intended: "C1",
+      ms_on_item: 4300,
       is_hypothetical: "no",
-      matches_certainty_strength: "yes",
       fits_naturally: "yes",
       timestamp: "2026-09-11T12:00:00.000Z"
     }
@@ -200,5 +209,6 @@ test("admin progress counts only complete three-question records", async (contex
   assert.equal(row.summary.completed, 1);
   assert.deepEqual(row.user.assignment, { start: 1, end: 270, total: 270 });
   assert.deepEqual(row.summary.taskCounts.hypothetical, { yes: 0, no: 1 });
+  assert.deepEqual(row.summary.taskCounts.certainty, { yes: 0, no: 1 });
   assert.deepEqual(row.summary.taskCounts.coherence, { yes: 2, no: 0 });
 });

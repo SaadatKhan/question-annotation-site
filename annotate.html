@@ -10,7 +10,7 @@
   <title>Annotating Hypothetical Injections</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
-<body>
+<body class="annotation-page">
   <header class="app-header">
     <div class="header-inner">
       <div>
@@ -49,7 +49,10 @@
             <strong id="progress-count">0 of 270 saved</strong>
             <span id="progress-range" class="progress-range"></span>
           </div>
-          <span id="progress-percent" class="progress-percent">0%</span>
+          <div class="progress-side">
+            <span id="progress-percent" class="progress-percent">0%</span>
+            <span id="item-timer" class="item-timer" aria-label="Time on current sample">0:00</span>
+          </div>
         </div>
         <div class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="270" aria-valuenow="0">
           <div id="progress-fill" class="progress-fill"></div>
@@ -63,11 +66,11 @@
         <button id="review-button" class="primary-button" type="button">Review responses</button>
       </section>
 
-      <section id="annotation-panel" class="annotation-panel">
+      <div id="annotation-panel" class="annotation-layout">
+        <section class="annotation-sample-card" aria-labelledby="injected-heading">
         <div class="sample-toolbar">
           <div>
             <span class="sample-position" id="sample-position">Sample 1 of 270</span>
-            <span class="save-state" id="save-state">Not yet saved</span>
           </div>
           <form id="jump-form" class="jump-form">
             <label for="jump-input">Go to sample</label>
@@ -77,8 +80,8 @@
         </div>
 
         <div class="sample-id-row">
-          <span>Sample ID</span>
           <code id="sample-id"></code>
+          <span id="save-state" class="save-state">Not yet saved</span>
         </div>
 
         <section class="question-section" aria-labelledby="injected-heading">
@@ -88,27 +91,30 @@
         </section>
 
         <details class="comparison-section">
-          <summary>View original question</summary>
+          <summary>Show original question</summary>
           <div id="original-question" class="question-text comparison-text"></div>
         </details>
+        </section>
 
-        <form id="annotation-form" class="annotation-form" novalidate>
+        <form id="annotation-form" class="annotation-form annotation-rail" novalidate>
+          <div class="certainty-context">
+            <span>Written as</span><span class="certainty-badge" id="assigned-certainty"></span>
+          </div>
           <div id="annotation-tasks" class="annotation-tasks"></div>
 
           <div class="field-group comment-field">
             <label for="comment">Comment <span class="optional-label">Optional</span></label>
-            <textarea id="comment" name="comment" rows="3" maxlength="2000"
-                      aria-describedby="comment-guidance comment-count"
-                      placeholder="Explain any No response or add a brief note"></textarea>
+            <textarea id="comment" name="comment" rows="2" maxlength="2000"
+                      aria-describedby="comment-count"
+                      placeholder="Optional note"></textarea>
             <div class="comment-meta">
-              <span class="field-help" id="comment-guidance">Please add a comment when you select No so we can understand the issue better.</span>
               <span class="character-count" id="comment-count">0 / 2000</span>
             </div>
           </div>
 
           <label class="check-row flag-row" for="flag-review">
             <input id="flag-review" name="flag-review" type="checkbox">
-            <span>Flag this sample for review</span>
+            <span>Could not decide</span>
           </label>
 
           <div id="form-message" class="status" role="status" aria-live="polite"></div>
@@ -119,7 +125,7 @@
             <button id="save-button" class="primary-button save-button" type="submit" disabled>Save &amp; Next</button>
           </div>
         </form>
-      </section>
+      </div>
     </div>
   </main>
 

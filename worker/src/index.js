@@ -199,7 +199,6 @@ async function hmac(value, secret) {
 function validateAnnotation(body, user) {
   const sampleId = typeof body.sample_id === "string" ? body.sample_id : "";
   const comment = typeof body.comment === "string" ? body.comment.trim() : "";
-  const answerFields = ["is_hypothetical", "matches_certainty_strength", "fits_naturally"];
   if (!Number.isInteger(body.question_index) || body.question_index < 0 || body.question_index >= TOTAL_QUESTIONS) {
     throw httpError(400, "The question index is invalid.");
   }
@@ -208,16 +207,24 @@ function validateAnnotation(body, user) {
   if (!recordIsAssigned(body, assignmentForUser(user))) {
     throw httpError(403, "This sample is outside your assigned question range.");
   }
-  if (!answerFields.every((field) => ["yes", "no"].includes(body[field]))) {
-    throw httpError(400, "Answer Yes or No for all three questions.");
+  if (!["C1", "C2", "C3"].includes(body.certainty_assigned) ||
+      !["C1", "C2", "C3"].includes(body.certainty_intended) ||
+      !["yes", "no"].includes(body.is_hypothetical) ||
+      !["yes", "no"].includes(body.fits_naturally)) {
+    throw httpError(400, "Complete the certainty level and both Yes/No questions.");
+  }
+  if (!Number.isSafeInteger(body.ms_on_item) || body.ms_on_item < 0) {
+    throw httpError(400, "The time on this item is invalid.");
   }
   if (comment.length > 2000) throw httpError(400, "The comment is too long.");
   return {
-    schema_version: 2,
+    schema_version: 3,
     sample_id: sampleId,
     question_index: body.question_index,
+    certainty_assigned: body.certainty_assigned,
+    certainty_intended: body.certainty_intended,
+    ms_on_item: body.ms_on_item,
     is_hypothetical: body.is_hypothetical,
-    matches_certainty_strength: body.matches_certainty_strength,
     fits_naturally: body.fits_naturally,
     comment,
     flag_for_review: Boolean(body.flag_for_review),
@@ -245,7 +252,7 @@ async function adminStatus(env) {
     const completed = completeRecords.length;
     const taskCounts = {
       hypothetical: countTaskAnswers(records, "is_hypothetical"),
-      certainty: countTaskAnswers(records, "matches_certainty_strength"),
+      certainty: countCertaintyMatches(records),
       coherence: countTaskAnswers(records, "fits_naturally", "answer")
     };
     const lastSave = records.reduce((latest, record) => {
@@ -269,8 +276,21 @@ async function adminStatus(env) {
 }
 
 function isCompleteAnnotation(record) {
-  return ["is_hypothetical", "matches_certainty_strength", "fits_naturally"]
-    .every((field) => ["yes", "no"].includes(record[field]));
+  return ["C1", "C2", "C3"].includes(record.certainty_assigned) &&
+    ["C1", "C2", "C3"].includes(record.certainty_intended) &&
+    ["yes", "no"].includes(record.is_hypothetical) &&
+    ["yes", "no"].includes(record.fits_naturally);
+}
+
+function countCertaintyMatches(records) {
+  return records.reduce((counts, record) => {
+    const value = ["C1", "C2", "C3"].includes(record.certainty_assigned) &&
+      ["C1", "C2", "C3"].includes(record.certainty_intended)
+      ? (record.certainty_assigned === record.certainty_intended ? "yes" : "no")
+      : record.matches_certainty_strength;
+    if (value === "yes" || value === "no") counts[value] += 1;
+    return counts;
+  }, { yes: 0, no: 0 });
 }
 
 function countTaskAnswers(records, field, legacyField = "") {

@@ -16,6 +16,7 @@
     progressCount: document.getElementById("progress-count"),
     progressRange: document.getElementById("progress-range"),
     progressPercent: document.getElementById("progress-percent"),
+    itemTimer: document.getElementById("item-timer"),
     progressTrack: document.querySelector(".progress-track"),
     progressFill: document.getElementById("progress-fill"),
     completion: document.getElementById("completion-panel"),
@@ -32,7 +33,6 @@
     form: document.getElementById("annotation-form"),
     tasks: document.getElementById("annotation-tasks"),
     comment: document.getElementById("comment"),
-    commentGuidance: document.getElementById("comment-guidance"),
     commentCount: document.getElementById("comment-count"),
     flag: document.getElementById("flag-review"),
     formMessage: document.getElementById("form-message"),
@@ -47,9 +47,21 @@
     currentIndex: 0,
     username: "",
     assignment: { start: 1, end: 270, total: 270 },
+    itemStartedAt: Date.now(),
     dirty: false,
     saving: false
   };
+
+  const certaintyHints = {
+    C1: "Written as Weak: one possibility among several. Examples: might be, could be, cannot be ruled out.",
+    C2: "Written as Moderate: the leading candidate, still open. Examples: probably, seems likely.",
+    C3: "Written as Strong: close to settled, still a judgment. Examples: almost certainly, strongly favors."
+  };
+
+  function updateItemTimer() {
+    const seconds = Math.floor((Date.now() - state.itemStartedAt) / 1000);
+    elements.itemTimer.textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+  }
 
   function setFormMessage(message, type = "") {
     elements.formMessage.textContent = message;
@@ -103,21 +115,18 @@
       legend.append(number, document.createTextNode(task.question));
       fieldset.append(legend);
 
-      if (task.showCertainty) {
-        const context = document.createElement("div");
-        context.className = "certainty-context";
-        const contextLabel = document.createElement("span");
-        contextLabel.textContent = "Assigned certainty strength";
-        const badge = document.createElement("span");
-        badge.className = "certainty-badge";
-        badge.id = "assigned-certainty";
-        context.append(contextLabel, badge);
-        fieldset.append(context);
+      if (task.hint !== undefined) {
+        const hint = document.createElement("p");
+        hint.className = "task-hint";
+        if (task.field === "certainty_assigned") hint.id = "certainty-hint";
+        hint.textContent = task.hint;
+        fieldset.append(hint);
       }
 
       const options = document.createElement("div");
       options.className = "annotation-options";
-      config.annotationOptions.forEach((option) => {
+      if (task.options) options.classList.add("three-options");
+      (task.options || config.annotationOptions).forEach((option) => {
         const inputId = `${task.field}-${option.value}`;
         const label = document.createElement("label");
         label.className = "answer-option";
@@ -162,11 +171,16 @@
   }
 
   function allTasksAnswered() {
-    return Object.values(selectedAnswers()).every(Boolean);
+    const answers = selectedAnswers();
+    return ["C1", "C2", "C3"].includes(answers.certainty_assigned) &&
+      ["yes", "no"].includes(answers.is_hypothetical) &&
+      ["yes", "no"].includes(answers.fits_naturally);
   }
 
   function isCompleteAnnotation(record) {
-    return Boolean(record && config.annotationTasks.every((task) => ["yes", "no"].includes(record[task.field])));
+    return Boolean(record && ["C1", "C2", "C3"].includes(record.certainty_assigned) &&
+      ["yes", "no"].includes(record.is_hypothetical) &&
+      ["yes", "no"].includes(record.fits_naturally));
   }
 
   function savedTaskAnswer(saved, field) {
@@ -183,14 +197,6 @@
 
   function updateCommentCount() {
     elements.commentCount.textContent = `${elements.comment.value.length} / ${config.maxCommentLength}`;
-  }
-
-  function updateCommentGuidance() {
-    const hasNo = Object.values(selectedAnswers()).includes("no");
-    elements.commentGuidance.classList.toggle("recommended", hasNo);
-    elements.commentGuidance.textContent = hasNo
-      ? "A comment is recommended because you selected No."
-      : "Please add a comment when you select No so we can understand the issue better.";
   }
 
   function updateSaveState() {
@@ -254,7 +260,8 @@
 
     elements.form.reset();
     const certaintyBadge = document.getElementById("assigned-certainty");
-    certaintyBadge.textContent = `${question.certainty} - ${question.certainty_label}`;
+    certaintyBadge.textContent = ({ C1: "Weak", C2: "Moderate", C3: "Strong" })[question.certainty];
+    document.getElementById("certainty-hint").textContent = certaintyHints[question.certainty];
     elements.comment.value = saved && typeof saved.comment === "string" ? saved.comment : "";
     elements.flag.checked = Boolean(saved && saved.flag_for_review);
     config.annotationTasks.forEach((task) => {
@@ -264,7 +271,8 @@
     });
 
     updateCommentCount();
-    updateCommentGuidance();
+    state.itemStartedAt = Date.now();
+    updateItemTimer();
     updateSaveState();
     updateSaveButton();
     elements.previous.disabled = state.currentIndex === 0;
@@ -302,18 +310,19 @@
     state.dirty = true;
     updateSaveState();
     updateSaveButton();
-    updateCommentGuidance();
     setFormMessage("");
   }
 
   async function saveCurrentAnnotation() {
     const answers = selectedAnswers();
-    if (!Object.values(answers).every(Boolean) || state.saving) return;
+    if (!allTasksAnswered() || state.saving) return;
 
     const question = currentQuestion();
     const record = {
       sample_id: question.id,
       question_index: question.questionIndex,
+      certainty_intended: question.certainty,
+      ms_on_item: Math.max(0, Date.now() - state.itemStartedAt),
       ...answers,
       comment: elements.comment.value.trim(),
       flag_for_review: elements.flag.checked,
@@ -448,6 +457,7 @@
       elements.comment.maxLength = config.maxCommentLength;
       createAnnotationTasks();
       bindEvents();
+      window.setInterval(updateItemTimer, 1000);
 
       const allQuestions = normalizeQuestions(await questionResponse.json());
       state.questions = allQuestions.slice(assignment.start - 1, assignment.end);

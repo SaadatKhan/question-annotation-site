@@ -50,11 +50,11 @@ The first and most recent successful login are stored as:
 activity/<username>.json
 ```
 
-Each completed sample records three Yes/No judgments: whether the inserted sentence is hypothetical, whether it matches the displayed certainty strength, and whether it fits naturally and coherently. The optional comment is especially useful when an annotator selects No.
+Each completed sample records a three-level certainty judgment (`C1` Weak, `C2` Moderate, `C3` Strong) and two Yes/No judgments: whether the inserted possibility remains unconfirmed without introducing additional clinical detail, and whether the sentence fits the question. The optional comment and could-not-decide flag are available for every sample. The interface preserves line breaks embedded in question text.
 
 Question access is divided into paired assignments: `Annotator1` and `Annotator2` receive samples 1-135, while `Annotator3` and `Annotator4` receive samples 136-270. Administrators receive all 270 samples. The Worker enforces these ranges in addition to the browser filtering them.
 
-Every save reads the latest annotator file, replaces the record with the same `sample_id`, and commits the updated JSONL file. GitHub write conflicts are fetched and retried twice. Older one-question records remain readable as partial annotations, but a sample counts as complete only after all three current judgments are saved.
+Every save reads the latest annotator file, replaces the record with the same `sample_id`, and commits the updated JSONL file. GitHub write conflicts are fetched and retried twice. Older records remain readable as partial annotations, but a sample counts as complete only after all three current judgments are saved. New records store the displayed and selected certainty levels, the two Yes/No answers, and milliseconds spent on the item.
 
 ## Initial setup
 
