@@ -26,6 +26,7 @@ question-annotation-site/
 |-- admin.html                 Admin-only progress dashboard
 |-- css/style.css              Responsive interface
 |-- data/questions.json        Sanitized browser dataset
+|-- guidelines/                Public annotation guideline PDF
 |-- js/api.js                  Browser-to-Worker client
 |-- js/config.js               Public application configuration
 |-- js/login.js                Login workflow
@@ -49,6 +50,8 @@ The first and most recent successful login are stored as:
 ```text
 activity/<username>.json
 ```
+
+The annotation workspace opens `guidelines/annotation-guideline-2026-09-17.pdf` in a slide-in viewer. Like the rest of the GitHub Pages site, this PDF is publicly accessible to anyone with its URL; it contains no account credentials or private annotation results.
 
 Each completed sample records a three-level certainty judgment (`C1` Weak, `C2` Moderate, `C3` Strong) and two Yes/No judgments: whether the inserted possibility remains unconfirmed without introducing additional clinical detail, and whether the sentence fits the question. The optional comment and could-not-decide flag are available for every sample. The interface preserves line breaks embedded in question text.
 

@@ -6,7 +6,7 @@
   <meta name="color-scheme" content="light">
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; connect-src 'self' https://*.workers.dev http://localhost:8787; img-src 'self' data:; script-src 'self'; style-src 'self'; base-uri 'none'; form-action 'self'">
+        content="default-src 'self'; connect-src 'self' https://*.workers.dev http://localhost:8787; frame-src 'self'; img-src 'self' data:; script-src 'self'; style-src 'self'; base-uri 'none'; form-action 'self'">
   <title>Annotating Hypothetical Injections</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
@@ -19,6 +19,7 @@
       </div>
       <div class="account-area">
         <span id="annotator-name" class="account-name"></span>
+        <button id="guidelines-button" class="secondary-button guidelines-button" type="button" aria-haspopup="dialog" aria-controls="guidelines-panel">View guidelines</button>
         <a id="admin-link" class="secondary-button link-button hidden" href="admin.html">Dashboard</a>
         <button id="logout-button" class="secondary-button" type="button">Sign out</button>
       </div>
@@ -128,6 +129,18 @@
       </div>
     </div>
   </main>
+
+  <div id="guidelines-backdrop" class="guidelines-backdrop hidden" aria-hidden="true"></div>
+  <aside id="guidelines-panel" class="guidelines-panel hidden" role="dialog" aria-modal="true" aria-labelledby="guidelines-title" tabindex="-1">
+    <div class="guidelines-panel-header">
+      <h2 id="guidelines-title">Annotation guidelines</h2>
+      <div class="guidelines-panel-actions">
+        <a href="guidelines/annotation-guideline-2026-09-17.pdf" target="_blank" rel="noopener noreferrer">Open PDF</a>
+        <button id="guidelines-close" class="secondary-button" type="button" aria-label="Close guidelines">Close</button>
+      </div>
+    </div>
+    <iframe id="guidelines-frame" title="Annotation guidelines PDF" data-src="guidelines/annotation-guideline-2026-09-17.pdf"></iframe>
+  </aside>
 
   <script src="js/config.js"></script>
   <script src="js/api.js"></script>

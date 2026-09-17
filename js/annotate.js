@@ -12,6 +12,13 @@
     appTitle: document.getElementById("app-title"),
     annotatorName: document.getElementById("annotator-name"),
     adminLink: document.getElementById("admin-link"),
+    guidelinesButton: document.getElementById("guidelines-button"),
+    guidelinesBackdrop: document.getElementById("guidelines-backdrop"),
+    guidelinesPanel: document.getElementById("guidelines-panel"),
+    guidelinesClose: document.getElementById("guidelines-close"),
+    guidelinesFrame: document.getElementById("guidelines-frame"),
+    main: document.querySelector("main"),
+    header: document.querySelector(".app-header"),
     logout: document.getElementById("logout-button"),
     progressCount: document.getElementById("progress-count"),
     progressRange: document.getElementById("progress-range"),
@@ -48,6 +55,8 @@
     username: "",
     assignment: { start: 1, end: 270, total: 270 },
     itemStartedAt: Date.now(),
+    guidelinesOpenedAt: null,
+    guidelinesReturnFocus: null,
     dirty: false,
     saving: false
   };
@@ -57,10 +66,47 @@
     C2: "Written as Moderate: the leading candidate, still open. Examples: probably, seems likely.",
     C3: "Written as Strong: close to settled, still a judgment. Examples: almost certainly, strongly favors."
   };
+  let guidelinesCloseTimer = null;
 
   function updateItemTimer() {
-    const seconds = Math.floor((Date.now() - state.itemStartedAt) / 1000);
+    const seconds = Math.floor(((state.guidelinesOpenedAt || Date.now()) - state.itemStartedAt) / 1000);
     elements.itemTimer.textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+  }
+
+  function openGuidelines() {
+    if (state.guidelinesOpenedAt !== null) return;
+    if (guidelinesCloseTimer !== null) {
+      clearTimeout(guidelinesCloseTimer);
+      guidelinesCloseTimer = null;
+    }
+    state.guidelinesReturnFocus = document.activeElement;
+    state.guidelinesOpenedAt = Date.now();
+    if (!elements.guidelinesFrame.src) elements.guidelinesFrame.src = elements.guidelinesFrame.dataset.src;
+    elements.guidelinesBackdrop.classList.remove("hidden");
+    elements.guidelinesPanel.classList.remove("hidden");
+    document.body.classList.add("guidelines-open");
+    elements.main.inert = true;
+    elements.header.inert = true;
+    elements.guidelinesPanel.getBoundingClientRect();
+    elements.guidelinesPanel.classList.add("is-open");
+    elements.guidelinesClose.focus();
+  }
+
+  function closeGuidelines() {
+    if (state.guidelinesOpenedAt === null) return;
+    state.itemStartedAt += Date.now() - state.guidelinesOpenedAt;
+    state.guidelinesOpenedAt = null;
+    updateItemTimer();
+    elements.guidelinesPanel.classList.remove("is-open");
+    document.body.classList.remove("guidelines-open");
+    elements.guidelinesBackdrop.classList.add("hidden");
+    elements.main.inert = false;
+    elements.header.inert = false;
+    state.guidelinesReturnFocus?.focus();
+    guidelinesCloseTimer = setTimeout(() => {
+      elements.guidelinesPanel.classList.add("hidden");
+      guidelinesCloseTimer = null;
+    }, 240);
   }
 
   function setFormMessage(message, type = "") {
@@ -372,6 +418,9 @@
   }
 
   function bindEvents() {
+    elements.guidelinesButton.addEventListener("click", openGuidelines);
+    elements.guidelinesClose.addEventListener("click", closeGuidelines);
+    elements.guidelinesBackdrop.addEventListener("click", closeGuidelines);
     elements.form.addEventListener("change", markDirty);
     elements.comment.addEventListener("input", () => {
       updateCommentCount();
@@ -411,6 +460,13 @@
       event.returnValue = "";
     });
     document.addEventListener("keydown", (event) => {
+      if (state.guidelinesOpenedAt !== null) {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          closeGuidelines();
+        }
+        return;
+      }
       if (state.saving || elements.panel.classList.contains("hidden")) return;
       const tagName = event.target.tagName;
       const isTyping = tagName === "INPUT" || tagName === "TEXTAREA";
