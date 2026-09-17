@@ -1,6 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { repairMojibake } from "./repair-mojibake.mjs";
 
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = resolve(scriptDirectory, "..");
@@ -46,12 +47,12 @@ const questions = rows.map((row, index) => {
 
   return {
     id,
-    text: row.injected_question,
-    original_text: row.original_question,
-    statement: row.statement || "",
+    text: repairMojibake(row.injected_question),
+    original_text: repairMojibake(row.original_question),
+    statement: repairMojibake(row.statement || ""),
     certainty: row.certainty,
     certainty_label: certaintyLabels[row.certainty],
-    options: Array.isArray(row.options) ? row.options : []
+    options: Array.isArray(row.options) ? row.options.map(repairMojibake) : []
   };
 });
 
