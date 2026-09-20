@@ -27,7 +27,8 @@ test("public questions preserve line breaks and contain no mojibake markers", as
     question.statement,
     ...question.options
   ]);
-  assert.equal(questions.length, 270);
+  assert.equal(questions.length, 300);
+  assert.equal(questions.at(-1).id, "sample_299");
   assert.ok(questions.some((question) => question.text.includes("\n")));
   assert.ok(strings.every((value) => repairMojibake(value) === value));
   assert.ok(strings.some((value) => value.includes("patient’s")));

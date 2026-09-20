@@ -53,7 +53,8 @@
     annotations: new Map(),
     currentIndex: 0,
     username: "",
-    assignment: { start: 1, end: 270, total: 270 },
+    assignment: { start: 1, end: 300, total: 300 },
+    totalQuestions: 300,
     itemStartedAt: Date.now(),
     guidelinesOpenedAt: null,
     guidelinesReturnFocus: null,
@@ -288,7 +289,7 @@
     state.dirty = false;
     setFormMessage("");
 
-    elements.samplePosition.textContent = `Sample ${question.sampleNumber} of 270`;
+    elements.samplePosition.textContent = `Sample ${question.sampleNumber} of ${state.totalQuestions}`;
     elements.sampleId.textContent = question.id;
     elements.jumpInput.min = String(state.assignment.start);
     elements.jumpInput.max = String(state.assignment.end);
@@ -516,6 +517,7 @@
       window.setInterval(updateItemTimer, 1000);
 
       const allQuestions = normalizeQuestions(await questionResponse.json());
+      state.totalQuestions = allQuestions.length;
       state.questions = allQuestions.slice(assignment.start - 1, assignment.end);
       if (state.questions.length !== assignment.total) throw new Error("Your assigned questions could not be loaded.");
       elements.progressRange.textContent = assignment.total === allQuestions.length

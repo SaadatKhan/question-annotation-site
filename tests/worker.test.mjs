@@ -65,7 +65,7 @@ test("login issues a session without exposing credential data", async () => {
   const { response, payload } = await login("annotator1", "a-strong-user-password");
   assert.equal(response.status, 200);
   assert.equal(payload.user.role, "annotator");
-  assert.deepEqual(payload.user.assignment, { start: 1, end: 135, total: 135 });
+  assert.deepEqual(payload.user.assignment, { start: 1, end: 150, total: 150 });
   assert.equal(typeof payload.token, "string");
   assert.equal(payload.user.passwordHash, undefined);
 
@@ -207,7 +207,7 @@ test("admin progress counts only complete three-question records", async (contex
   assert.equal(row.status, "active");
   assert.equal(row.summary.savedRecords, 2);
   assert.equal(row.summary.completed, 1);
-  assert.deepEqual(row.user.assignment, { start: 1, end: 270, total: 270 });
+  assert.deepEqual(row.user.assignment, { start: 1, end: 300, total: 300 });
   assert.deepEqual(row.summary.taskCounts.hypothetical, { yes: 0, no: 1 });
   assert.deepEqual(row.summary.taskCounts.certainty, { yes: 0, no: 1 });
   assert.deepEqual(row.summary.taskCounts.coherence, { yes: 2, no: 0 });

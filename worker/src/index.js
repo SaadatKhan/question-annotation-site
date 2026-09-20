@@ -1,11 +1,11 @@
 const API_VERSION = "2022-11-28";
 const SESSION_LIFETIME_SECONDS = 12 * 60 * 60;
-const TOTAL_QUESTIONS = 270;
+const TOTAL_QUESTIONS = 300;
 const ANNOTATOR_ASSIGNMENTS = Object.freeze({
-  annotator1: Object.freeze({ start: 1, end: 135, total: 135 }),
-  annotator2: Object.freeze({ start: 1, end: 135, total: 135 }),
-  annotator3: Object.freeze({ start: 136, end: 270, total: 135 }),
-  annotator4: Object.freeze({ start: 136, end: 270, total: 135 })
+  annotator1: Object.freeze({ start: 1, end: 150, total: 150 }),
+  annotator2: Object.freeze({ start: 1, end: 150, total: 150 }),
+  annotator3: Object.freeze({ start: 151, end: 300, total: 150 }),
+  annotator4: Object.freeze({ start: 151, end: 300, total: 150 })
 });
 const encoder = new TextEncoder();
 

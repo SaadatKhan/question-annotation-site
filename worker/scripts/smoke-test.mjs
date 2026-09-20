@@ -44,12 +44,12 @@ assert.equal(dashboard.response.status, 200, dashboard.body.error || "Admin dash
 assert.equal(dashboard.body.users.length, 6);
 assert.equal(dashboard.body.rows.length, 6);
 const assignmentByUsername = new Map(dashboard.body.users.map((user) => [user.username, user.assignment]));
-assert.deepEqual(assignmentByUsername.get("Annotator1"), { start: 1, end: 135, total: 135 });
-assert.deepEqual(assignmentByUsername.get("Annotator2"), { start: 1, end: 135, total: 135 });
-assert.deepEqual(assignmentByUsername.get("Annotator3"), { start: 136, end: 270, total: 135 });
-assert.deepEqual(assignmentByUsername.get("Annotator4"), { start: 136, end: 270, total: 135 });
-assert.deepEqual(assignmentByUsername.get("SaadatKhan"), { start: 1, end: 270, total: 270 });
-assert.deepEqual(assignmentByUsername.get("KevinLybarger"), { start: 1, end: 270, total: 270 });
+assert.deepEqual(assignmentByUsername.get("Annotator1"), { start: 1, end: 150, total: 150 });
+assert.deepEqual(assignmentByUsername.get("Annotator2"), { start: 1, end: 150, total: 150 });
+assert.deepEqual(assignmentByUsername.get("Annotator3"), { start: 151, end: 300, total: 150 });
+assert.deepEqual(assignmentByUsername.get("Annotator4"), { start: 151, end: 300, total: 150 });
+assert.deepEqual(assignmentByUsername.get("SaadatKhan"), { start: 1, end: 300, total: 300 });
+assert.deepEqual(assignmentByUsername.get("KevinLybarger"), { start: 1, end: 300, total: 300 });
 const inProgress = dashboard.body.rows.filter((row) => row.status === "active").length;
 const notStarted = dashboard.body.rows.filter((row) => ["ready", "signed_in"].includes(row.status)).length;
 

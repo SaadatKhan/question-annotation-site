@@ -23,7 +23,7 @@
     tableBody: document.getElementById("status-table-body")
   };
 
-  const state = { users: [], totalQuestions: 270, refreshing: false };
+  const state = { users: [], totalQuestions: 300, refreshing: false };
 
   function showFatalError(error) {
     elements.loading.classList.add("hidden");

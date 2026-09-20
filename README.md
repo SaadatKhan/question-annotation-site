@@ -1,6 +1,6 @@
 # Annotating Hypothetical Injections
 
-A small research annotation application for 270 base-version questions. GitHub Pages hosts the interface, a Cloudflare Worker handles username/password authentication, and each annotation is saved directly to a private GitHub results repository.
+A small research annotation application for 300 base-arm questions. GitHub Pages hosts the interface, a Cloudflare Worker handles username/password authentication, and each annotation is saved directly to a private GitHub results repository.
 
 ## Architecture
 
@@ -55,7 +55,9 @@ The annotation workspace opens `guidelines/annotation-guideline-2026-09-17.pdf` 
 
 Each completed sample records a three-level certainty judgment (`C1` Weak, `C2` Moderate, `C3` Strong) and two Yes/No judgments: whether the inserted possibility remains unconfirmed without introducing additional clinical detail, and whether the sentence fits the question. The optional comment and could-not-decide flag are available for every sample. The interface preserves line breaks embedded in question text.
 
-Question access is divided into paired assignments: `Annotator1` and `Annotator2` receive samples 1-135, while `Annotator3` and `Annotator4` receive samples 136-270. Administrators receive all 270 samples. The Worker enforces these ranges in addition to the browser filtering them.
+Question access is divided into paired assignments: `Annotator1` and `Annotator2` receive samples 1-150, while `Annotator3` and `Annotator4` receive samples 151-300. Administrators receive all 300 samples. The Worker enforces these ranges in addition to the browser filtering them.
+
+The public dataset combines the original 270 base records with 30 records selected from `dataset_59_val_base.jsonl`. The added source IDs are recorded in `scripts/question-selection.mjs`; none come from the distractor arm, and source IDs 4, 8, 25, 45, 51, and 54 are explicitly excluded. The selected records are balanced across patient/clinician roles and retain approximately proportional source and certainty classes. Gold answers and source metadata are removed from the browser dataset.
 
 Every save reads the latest annotator file, replaces the record with the same `sample_id`, and commits the updated JSONL file. GitHub write conflicts are fetched and retried twice. Older records remain readable as partial annotations, but a sample counts as complete only after all three current judgments are saved. New records store the displayed and selected certainty levels, the two Yes/No answers, and milliseconds spent on the item.
 
