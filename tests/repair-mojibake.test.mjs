@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import {
+  EXCLUDED_TRAINING_SOURCE_IDS,
+  TRAINING_BASE_SOURCE_IDS,
+  VALIDATION_BASE_SOURCE_IDS
+} from "../scripts/question-selection.mjs";
 import { repairMojibake } from "../scripts/repair-mojibake.mjs";
 
 test("repairs common punctuation and medical symbols without changing valid text", () => {
@@ -17,6 +22,20 @@ test("repairs common punctuation and medical symbols without changing valid text
     assert.equal(repairMojibake(input), expected);
     assert.equal(repairMojibake(repairMojibake(input)), expected);
   }
+});
+
+test("training selection is separate from test-validation and excludes requested source rows", async () => {
+  const training = JSON.parse(
+    await readFile(new URL("../data/training-questions.json", import.meta.url), "utf8")
+  );
+  const validationIds = new Set(VALIDATION_BASE_SOURCE_IDS);
+  const excludedIds = new Set(EXCLUDED_TRAINING_SOURCE_IDS);
+
+  assert.equal(training.length, 24);
+  assert.equal(training[0].id, "sample_000");
+  assert.equal(training.at(-1).id, "sample_023");
+  assert.equal(new Set(TRAINING_BASE_SOURCE_IDS).size, 24);
+  assert.ok(TRAINING_BASE_SOURCE_IDS.every((id) => !validationIds.has(id) && !excludedIds.has(id)));
 });
 
 test("public questions preserve line breaks and contain no mojibake markers", async () => {

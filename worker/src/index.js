@@ -1,11 +1,29 @@
 const API_VERSION = "2022-11-28";
 const SESSION_LIFETIME_SECONDS = 12 * 60 * 60;
-const TOTAL_QUESTIONS = 300;
-const ANNOTATOR_ASSIGNMENTS = Object.freeze({
-  annotator1: Object.freeze({ start: 1, end: 150, total: 150 }),
-  annotator2: Object.freeze({ start: 1, end: 150, total: 150 }),
-  annotator3: Object.freeze({ start: 151, end: 300, total: 150 }),
-  annotator4: Object.freeze({ start: 151, end: 300, total: 150 })
+const DEFAULT_DATASET_ID = "test-validation";
+const DATASETS = Object.freeze({
+  training: Object.freeze({
+    label: "Training Round",
+    totalQuestions: 24,
+    fileName: "training-round.jsonl",
+    assignments: Object.freeze({
+      annotator1: Object.freeze({ start: 1, end: 12, total: 12 }),
+      annotator2: Object.freeze({ start: 1, end: 12, total: 12 }),
+      annotator3: Object.freeze({ start: 13, end: 24, total: 12 }),
+      annotator4: Object.freeze({ start: 13, end: 24, total: 12 })
+    })
+  }),
+  "test-validation": Object.freeze({
+    label: "Test-validation set",
+    totalQuestions: 300,
+    fileName: "test-validation.jsonl",
+    assignments: Object.freeze({
+      annotator1: Object.freeze({ start: 1, end: 150, total: 150 }),
+      annotator2: Object.freeze({ start: 1, end: 150, total: 150 }),
+      annotator3: Object.freeze({ start: 151, end: 300, total: 150 }),
+      annotator4: Object.freeze({ start: 151, end: 300, total: 150 })
+    })
+  })
 });
 const encoder = new TextEncoder();
 
@@ -42,20 +60,23 @@ export default {
         return json({ user: publicUser(session.user) }, 200, cors);
       }
       if (route === "GET /api/annotations") {
-        const file = await getAnnotationFile(session.user.username, env);
-        const assignment = assignmentForUser(session.user);
+        const datasetId = datasetIdFromUrl(url);
+        const file = await getAnnotationFile(session.user.username, datasetId, env);
+        const assignment = assignmentForUser(session.user, datasetId);
         return json({
           annotations: file.records.filter((record) => recordIsAssigned(record, assignment))
         }, 200, cors);
       }
       if (route === "PUT /api/annotations") {
-        const record = validateAnnotation(await readJson(request), session.user);
-        await saveAnnotation(session.user.username, record, env);
+        const body = await readJson(request);
+        const datasetId = datasetIdFromValue(body.dataset);
+        const record = validateAnnotation(body, session.user, datasetId);
+        await saveAnnotation(session.user.username, datasetId, record, env);
         return json({ annotation: record }, 200, cors);
       }
       if (route === "GET /api/admin/status") {
         requireAdmin(session.user);
-        return json(await adminStatus(env), 200, cors);
+        return json(await adminStatus(datasetIdFromUrl(url), env), 200, cors);
       }
 
       return json({ error: "Endpoint not found." }, 404, cors);
@@ -105,17 +126,34 @@ function requireAdmin(user) {
 }
 
 function publicUser(user) {
+  const assignments = Object.fromEntries(
+    Object.keys(DATASETS).map((datasetId) => [datasetId, assignmentForUser(user, datasetId)])
+  );
   return {
     username: user.username,
     displayName: user.displayName,
     role: user.role,
-    assignment: assignmentForUser(user)
+    assignment: assignments[DEFAULT_DATASET_ID],
+    assignments
   };
 }
 
-function assignmentForUser(user) {
-  if (user.role === "admin") return { start: 1, end: TOTAL_QUESTIONS, total: TOTAL_QUESTIONS };
-  const assignment = ANNOTATOR_ASSIGNMENTS[user.username.toLowerCase()];
+function datasetIdFromUrl(url) {
+  return datasetIdFromValue(url.searchParams.get("dataset"));
+}
+
+function datasetIdFromValue(value) {
+  const datasetId = value || DEFAULT_DATASET_ID;
+  if (!DATASETS[datasetId]) throw httpError(400, "The annotation set is invalid.");
+  return datasetId;
+}
+
+function assignmentForUser(user, datasetId = DEFAULT_DATASET_ID) {
+  const dataset = DATASETS[datasetIdFromValue(datasetId)];
+  if (user.role === "admin") {
+    return { start: 1, end: dataset.totalQuestions, total: dataset.totalQuestions };
+  }
+  const assignment = dataset.assignments[user.username.toLowerCase()];
   if (!assignment) throw httpError(500, `No question assignment is configured for ${user.username}.`);
   return { ...assignment };
 }
@@ -196,15 +234,17 @@ async function hmac(value, secret) {
   return new Uint8Array(await crypto.subtle.sign("HMAC", key, encoder.encode(value)));
 }
 
-function validateAnnotation(body, user) {
+function validateAnnotation(body, user, datasetId) {
+  const dataset = DATASETS[datasetId];
   const sampleId = typeof body.sample_id === "string" ? body.sample_id : "";
   const comment = typeof body.comment === "string" ? body.comment.trim() : "";
-  if (!Number.isInteger(body.question_index) || body.question_index < 0 || body.question_index >= TOTAL_QUESTIONS) {
+  if (!Number.isInteger(body.question_index) || body.question_index < 0 ||
+      body.question_index >= dataset.totalQuestions) {
     throw httpError(400, "The question index is invalid.");
   }
   const expectedId = `sample_${String(body.question_index).padStart(3, "0")}`;
   if (sampleId !== expectedId) throw httpError(400, "The sample ID is invalid.");
-  if (!recordIsAssigned(body, assignmentForUser(user))) {
+  if (!recordIsAssigned(body, assignmentForUser(user, datasetId))) {
     throw httpError(403, "This sample is outside your assigned question range.");
   }
   if (!["C1", "C2", "C3"].includes(body.certainty_assigned) ||
@@ -218,7 +258,8 @@ function validateAnnotation(body, user) {
   }
   if (comment.length > 2000) throw httpError(400, "The comment is too long.");
   return {
-    schema_version: 3,
+    schema_version: 4,
+    dataset: datasetId,
     sample_id: sampleId,
     question_index: body.question_index,
     certainty_assigned: body.certainty_assigned,
@@ -233,18 +274,23 @@ function validateAnnotation(body, user) {
   };
 }
 
-async function adminStatus(env) {
+async function adminStatus(datasetId, env) {
+  const dataset = DATASETS[datasetId];
   const configuredUsers = parseUsers(env.AUTH_USERS_JSON);
-  const users = configuredUsers.map((user) => ({ ...publicUser(user), enabled: user.enabled !== false }));
+  const users = configuredUsers.map((user) => ({
+    ...publicUser(user),
+    assignment: assignmentForUser(user, datasetId),
+    enabled: user.enabled !== false
+  }));
   const rows = await Promise.all(users.map(async (user) => {
     const [file, activityFile] = await Promise.all([
-      getAnnotationFile(user.username, env),
+      getAnnotationFile(user.username, datasetId, env),
       getActivityFile(user.username, env)
     ]);
     const activity = activityFile ? activityFile.activity : null;
     const validRecords = deduplicate(file.records).filter((record) => {
       const index = Number(record.question_index);
-      return Number.isInteger(index) && index >= 0 && index < TOTAL_QUESTIONS &&
+      return Number.isInteger(index) && index >= 0 && index < dataset.totalQuestions &&
         String(record.sample_id) === `sample_${String(index).padStart(3, "0")}`;
     });
     const records = validRecords.filter((record) => recordIsAssigned(record, user.assignment));
@@ -261,6 +307,7 @@ async function adminStatus(env) {
     }, "");
     return {
       user,
+      resultsPath: file.path,
       status: !user.enabled ? "disabled" : completed >= user.assignment.total ? "complete" : records.length > 0 ? "active" : activity ? "signed_in" : "ready",
       summary: {
         completed,
@@ -272,7 +319,14 @@ async function adminStatus(env) {
       }
     };
   }));
-  return { users, rows, totalQuestions: TOTAL_QUESTIONS, updatedAt: new Date().toISOString() };
+  return {
+    dataset: datasetId,
+    datasetLabel: dataset.label,
+    users,
+    rows,
+    totalQuestions: dataset.totalQuestions,
+    updatedAt: new Date().toISOString()
+  };
 }
 
 function isCompleteAnnotation(record) {
@@ -353,28 +407,44 @@ function deduplicate(records) {
   return Array.from(bySample.values());
 }
 
-function annotationPath(username, env) {
+function annotationPath(username, datasetId, env) {
   if (!/^[A-Za-z0-9_-]{2,40}$/.test(username)) throw httpError(400, "The username is invalid.");
+  return `${env.ANNOTATIONS_DIRECTORY || "annotations"}/${username}/${DATASETS[datasetId].fileName}`;
+}
+
+function legacyAnnotationPath(username, env) {
   return `${env.ANNOTATIONS_DIRECTORY || "annotations"}/${username}.jsonl`;
 }
 
-async function getAnnotationFile(username, env) {
-  const path = annotationPath(username, env);
+async function getGitHubAnnotationFile(path, env) {
   const endpoint = `/repos/${encodeURIComponent(env.GITHUB_OWNER)}/${encodeURIComponent(env.GITHUB_RESULTS_REPO)}` +
     `/contents/${encodePath(path)}?ref=${encodeURIComponent(env.GITHUB_RESULTS_BRANCH || "main")}`;
   const file = await githubRequest(endpoint, env, { allowNotFound: true });
-  if (!file) return { records: [], sha: null };
+  if (!file) return null;
   if (file.type !== "file" || file.encoding !== "base64") throw httpError(502, "The annotation file is invalid.");
-  return { records: parseJsonl(base64ToUtf8(file.content)), sha: file.sha };
+  return { records: parseJsonl(base64ToUtf8(file.content)), sha: file.sha, path };
 }
 
-async function saveAnnotation(username, record, env) {
-  const path = annotationPath(username, env);
+async function getAnnotationFile(username, datasetId, env) {
+  const path = annotationPath(username, datasetId, env);
+  const file = await getGitHubAnnotationFile(path, env);
+  if (file) return file;
+
+  if (datasetId === DEFAULT_DATASET_ID) {
+    const legacyPath = legacyAnnotationPath(username, env);
+    const legacyFile = await getGitHubAnnotationFile(legacyPath, env);
+    if (legacyFile) return { ...legacyFile, sha: null };
+  }
+  return { records: [], sha: null, path };
+}
+
+async function saveAnnotation(username, datasetId, record, env) {
+  const path = annotationPath(username, datasetId, env);
   const endpoint = `/repos/${encodeURIComponent(env.GITHUB_OWNER)}/${encodeURIComponent(env.GITHUB_RESULTS_REPO)}` +
     `/contents/${encodePath(path)}`;
 
   for (let attempt = 0; attempt < 3; attempt += 1) {
-    const latest = await getAnnotationFile(username, env);
+    const latest = await getAnnotationFile(username, datasetId, env);
     const records = deduplicate(latest.records);
     const bySample = new Map(records.map((saved) => [String(saved.sample_id), saved]));
     bySample.set(record.sample_id, record);
@@ -383,7 +453,7 @@ async function saveAnnotation(username, record, env) {
       await githubRequest(endpoint, env, {
         method: "PUT",
         body: {
-          message: `Save annotation ${record.sample_id} for ${username}`,
+          message: `Save ${datasetId} annotation ${record.sample_id} for ${username}`,
           content: utf8ToBase64(serializeJsonl(ordered)),
           branch: env.GITHUB_RESULTS_BRANCH || "main",
           ...(latest.sha ? { sha: latest.sha } : {})

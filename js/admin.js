@@ -10,6 +10,7 @@
     retry: document.getElementById("admin-retry"),
     workspace: document.getElementById("admin-workspace"),
     adminName: document.getElementById("admin-name"),
+    datasetSelect: document.getElementById("admin-dataset-select"),
     logout: document.getElementById("admin-logout"),
     refresh: document.getElementById("refresh-dashboard"),
     updated: document.getElementById("admin-updated"),
@@ -23,7 +24,12 @@
     tableBody: document.getElementById("status-table-body")
   };
 
-  const state = { users: [], totalQuestions: 300, refreshing: false };
+  const state = {
+    users: [],
+    datasetId: config.defaultDatasetId,
+    totalQuestions: 300,
+    refreshing: false
+  };
 
   function showFatalError(error) {
     elements.loading.classList.add("hidden");
@@ -91,7 +97,7 @@
 
   function renderTable(rows) {
     elements.tableBody.replaceChildren();
-    rows.forEach(({ user, summary, status: statusKey }) => {
+    rows.forEach(({ user, summary, status: statusKey, resultsPath }) => {
       const row = document.createElement("tr");
       const personCell = document.createElement("td");
       const person = document.createElement("div");
@@ -139,10 +145,13 @@
       const actionCell = document.createElement("td");
       if (summary.savedRecords > 0) {
         const link = document.createElement("a");
+        const fallbackPath = `${config.annotationsDirectory}/${user.username}/` +
+          config.datasets[state.datasetId].resultsFile;
+        const path = resultsPath || fallbackPath;
         link.className = "table-link";
         link.href = `https://github.com/${encodeURIComponent(config.githubOwner)}/` +
           `${encodeURIComponent(config.resultsRepo)}/blob/${encodeURIComponent(config.resultsBranch)}/` +
-          `${encodeURIComponent(config.annotationsDirectory)}/${encodeURIComponent(user.username)}.jsonl`;
+          path.split("/").map(encodeURIComponent).join("/");
         link.target = "_blank";
         link.rel = "noopener noreferrer";
         link.textContent = "View";
@@ -157,13 +166,16 @@
     if (state.refreshing) return;
     state.refreshing = true;
     elements.refresh.disabled = true;
+    elements.datasetSelect.disabled = true;
     elements.refresh.textContent = "Refreshing...";
     elements.warning.classList.add("hidden");
 
     try {
-      const data = await api.loadAdminStatus();
+      const data = await api.loadAdminStatus(state.datasetId);
       state.users = data.users;
+      state.datasetId = data.dataset;
       state.totalQuestions = data.totalQuestions;
+      elements.datasetSelect.value = data.dataset;
       renderAccessRoles();
       renderTable(data.rows);
 
@@ -191,6 +203,7 @@
     } finally {
       state.refreshing = false;
       elements.refresh.disabled = false;
+      elements.datasetSelect.disabled = false;
       elements.refresh.textContent = "Refresh";
     }
   }
@@ -204,6 +217,9 @@
       const session = await api.getSession();
       if (session.user.role !== "admin") throw new api.ApiError("This dashboard is available only to project administrators.", 403);
       sessionStorage.setItem(config.currentUserStorageKey, JSON.stringify(session.user));
+      const storedDatasetId = sessionStorage.getItem(config.datasetStorageKey);
+      state.datasetId = config.datasets[storedDatasetId] ? storedDatasetId : config.defaultDatasetId;
+      elements.datasetSelect.value = state.datasetId;
       elements.adminName.textContent = session.user.displayName;
       elements.loading.classList.add("hidden");
       elements.error.classList.add("hidden");
@@ -215,6 +231,11 @@
   }
 
   elements.refresh.addEventListener("click", () => refreshDashboard().catch(showFatalError));
+  elements.datasetSelect.addEventListener("change", () => {
+    state.datasetId = elements.datasetSelect.value;
+    sessionStorage.setItem(config.datasetStorageKey, state.datasetId);
+    refreshDashboard().catch(showFatalError);
+  });
   elements.retry.addEventListener("click", () => window.location.reload());
   elements.logout.addEventListener("click", () => {
     api.clearSession();

@@ -64,7 +64,16 @@
             <h2>Annotator progress</h2>
             <p id="admin-updated" class="admin-updated"></p>
           </div>
-          <button id="refresh-dashboard" class="primary-button" type="button">Refresh</button>
+          <div class="admin-title-actions">
+            <label class="dataset-switcher" for="admin-dataset-select">
+              <span>Annotation set</span>
+              <select id="admin-dataset-select">
+                <option value="training">Training Round</option>
+                <option value="test-validation" selected>Test-validation set</option>
+              </select>
+            </label>
+            <button id="refresh-dashboard" class="primary-button" type="button">Refresh</button>
+          </div>
         </div>
 
         <div id="admin-warning" class="permission-warning hidden" role="status"></div>

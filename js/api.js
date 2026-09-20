@@ -68,8 +68,9 @@
     return request("/api/session");
   }
 
-  async function loadAnnotations() {
-    const payload = await request("/api/annotations");
+  async function loadAnnotations(datasetId) {
+    const selectedDataset = datasetId || config.defaultDatasetId;
+    const payload = await request(`/api/annotations?dataset=${encodeURIComponent(selectedDataset)}`);
     const annotations = new Map();
     (payload.annotations || []).forEach((record) => {
       if (record && record.sample_id !== undefined) annotations.set(String(record.sample_id), record);
@@ -77,13 +78,18 @@
     return annotations;
   }
 
-  async function saveAnnotation(record) {
-    const payload = await request("/api/annotations", { method: "PUT", body: record });
+  async function saveAnnotation(datasetId, record) {
+    const selectedDataset = datasetId || config.defaultDatasetId;
+    const payload = await request("/api/annotations", {
+      method: "PUT",
+      body: { ...record, dataset: selectedDataset }
+    });
     return payload.annotation;
   }
 
-  async function loadAdminStatus() {
-    return request("/api/admin/status");
+  async function loadAdminStatus(datasetId) {
+    const selectedDataset = datasetId || config.defaultDatasetId;
+    return request(`/api/admin/status?dataset=${encodeURIComponent(selectedDataset)}`);
   }
 
   window.AnnotationApi = Object.freeze({

@@ -18,6 +18,13 @@
         <h1 id="app-title">Annotating Hypothetical Injections</h1>
       </div>
       <div class="account-area">
+        <label class="dataset-switcher" for="dataset-select">
+          <span>Annotation set</span>
+          <select id="dataset-select">
+            <option value="training">Training Round</option>
+            <option value="test-validation" selected>Test-validation set</option>
+          </select>
+        </label>
         <span id="annotator-name" class="account-name"></span>
         <button id="guidelines-button" class="secondary-button guidelines-button" type="button" aria-haspopup="dialog" aria-controls="guidelines-panel">View guidelines</button>
         <a id="admin-link" class="secondary-button link-button hidden" href="admin.html">Dashboard</a>

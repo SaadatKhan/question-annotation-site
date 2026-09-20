@@ -42,7 +42,8 @@ body {
 
 button,
 input,
-textarea {
+textarea,
+select {
   font: inherit;
 }
 
@@ -55,6 +56,7 @@ button:focus-visible,
 a:focus-visible,
 input:focus-visible,
 textarea:focus-visible,
+select:focus-visible,
 summary:focus-visible {
   outline: 3px solid color-mix(in srgb, var(--focus) 45%, transparent);
   outline-offset: 2px;
@@ -345,6 +347,32 @@ textarea {
   color: var(--muted);
   font-size: 0.88rem;
   font-weight: 650;
+}
+
+.dataset-switcher {
+  display: grid;
+  gap: 2px;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 750;
+}
+
+.dataset-switcher select {
+  min-height: 36px;
+  max-width: 190px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  padding: 6px 30px 6px 10px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.dataset-switcher select:disabled {
+  cursor: wait;
+  opacity: 0.65;
 }
 
 .workspace-shell {
@@ -863,6 +891,12 @@ textarea {
   font-size: 1.45rem;
 }
 
+.admin-title-actions {
+  display: flex;
+  align-items: end;
+  gap: 10px;
+}
+
 .admin-updated {
   min-height: 20px;
   margin: 4px 0 0;
@@ -1147,6 +1181,11 @@ textarea {
 
   .admin-title-row {
     align-items: flex-start;
+  }
+
+  .admin-title-actions {
+    align-items: stretch;
+    flex-direction: column;
   }
 }
 

@@ -17,7 +17,8 @@ test("browser client stores sessions and sends authenticated requests", async ()
       apiBaseUrl: "https://api.example.test",
       tokenStorageKey: "persistent",
       sessionTokenStorageKey: "session",
-      currentUserStorageKey: "user"
+      currentUserStorageKey: "user",
+      defaultDatasetId: "test-validation"
     } },
     localStorage: new MemoryStorage(),
     sessionStorage: new MemoryStorage(),
@@ -38,8 +39,9 @@ test("browser client stores sessions and sends authenticated requests", async ()
 
   const result = await api.login("test", "password");
   api.storeToken(result.token, false);
-  const annotations = await api.loadAnnotations();
+  const annotations = await api.loadAnnotations("training");
   assert.equal(annotations.get("sample_001").matches_certainty_strength, "no");
   assert.equal(calls[0].options.headers.Authorization, undefined);
   assert.equal(calls[1].options.headers.Authorization, "Bearer signed-token");
+  assert.match(calls[1].url, /dataset=training$/);
 });

@@ -11,6 +11,7 @@
     workspace: document.getElementById("workspace"),
     appTitle: document.getElementById("app-title"),
     annotatorName: document.getElementById("annotator-name"),
+    datasetSelect: document.getElementById("dataset-select"),
     adminLink: document.getElementById("admin-link"),
     guidelinesButton: document.getElementById("guidelines-button"),
     guidelinesBackdrop: document.getElementById("guidelines-backdrop"),
@@ -53,6 +54,8 @@
     annotations: new Map(),
     currentIndex: 0,
     username: "",
+    user: null,
+    datasetId: config.defaultDatasetId,
     assignment: { start: 1, end: 300, total: 300 },
     totalQuestions: 300,
     itemStartedAt: Date.now(),
@@ -378,6 +381,7 @@
     };
 
     state.saving = true;
+    elements.datasetSelect.disabled = true;
     elements.tasks.querySelectorAll("fieldset").forEach((fieldset) => { fieldset.disabled = true; });
     elements.comment.disabled = true;
     elements.flag.disabled = true;
@@ -388,7 +392,7 @@
     setFormMessage("Saving to GitHub...");
 
     try {
-      const savedRecord = await client.saveAnnotation(record);
+      const savedRecord = await client.saveAnnotation(state.datasetId, record);
       state.annotations.set(question.id, savedRecord);
       state.dirty = false;
       updateProgress();
@@ -405,6 +409,7 @@
       setFormMessage(error.message || "The annotation could not be saved. Try again.", "error");
     } finally {
       state.saving = false;
+      elements.datasetSelect.disabled = false;
       elements.tasks.querySelectorAll("fieldset").forEach((fieldset) => { fieldset.disabled = false; });
       elements.comment.disabled = false;
       elements.flag.disabled = false;
@@ -419,6 +424,21 @@
   }
 
   function bindEvents() {
+    elements.datasetSelect.addEventListener("change", async () => {
+      const nextDatasetId = elements.datasetSelect.value;
+      const previousDatasetId = state.datasetId;
+      if (!confirmNavigation()) {
+        elements.datasetSelect.value = previousDatasetId;
+        return;
+      }
+      state.dirty = false;
+      try {
+        await loadDataset(nextDatasetId);
+      } catch (error) {
+        elements.datasetSelect.value = previousDatasetId;
+        setFormMessage(error.message || "The annotation set could not be loaded.", "error");
+      }
+    });
     elements.guidelinesButton.addEventListener("click", openGuidelines);
     elements.guidelinesClose.addEventListener("click", closeGuidelines);
     elements.guidelinesBackdrop.addEventListener("click", closeGuidelines);
@@ -485,6 +505,65 @@
     });
   }
 
+  function assignmentForDataset(user, datasetId) {
+    const assignment = user.assignments?.[datasetId] ||
+      (datasetId === config.defaultDatasetId ? user.assignment : null);
+    if (!assignment || !Number.isInteger(assignment.start) || !Number.isInteger(assignment.end) ||
+        !Number.isInteger(assignment.total) || assignment.total !== assignment.end - assignment.start + 1) {
+      throw new Error("Your question assignment is invalid.");
+    }
+    return assignment;
+  }
+
+  async function loadDataset(datasetId) {
+    const dataset = config.datasets[datasetId];
+    if (!dataset) throw new Error("That annotation set is not available.");
+    const assignment = assignmentForDataset(state.user, datasetId);
+    elements.datasetSelect.disabled = true;
+    elements.workspace.setAttribute("aria-busy", "true");
+
+    try {
+      const [questionResponse, annotations] = await Promise.all([
+        fetch(dataset.questionsPath, { cache: "no-store" }),
+        client.loadAnnotations(datasetId)
+      ]);
+      if (!questionResponse.ok) throw new Error("The questions file could not be loaded.");
+
+      const allQuestions = normalizeQuestions(await questionResponse.json());
+      const questions = allQuestions.slice(assignment.start - 1, assignment.end);
+      if (questions.length !== assignment.total) {
+        throw new Error("Your assigned questions could not be loaded.");
+      }
+
+      state.datasetId = datasetId;
+      state.assignment = assignment;
+      state.totalQuestions = allQuestions.length;
+      state.questions = questions;
+      state.annotations = annotations;
+      state.currentIndex = 0;
+      state.dirty = false;
+      elements.datasetSelect.value = datasetId;
+      elements.progressRange.textContent = assignment.total === allQuestions.length
+        ? `All samples ${assignment.start}-${assignment.end}`
+        : `Assigned samples ${assignment.start}-${assignment.end}`;
+      sessionStorage.setItem(config.datasetStorageKey, datasetId);
+
+      const unansweredIndex = findFirstUnanswered();
+      if (unansweredIndex === -1) {
+        showCompletion();
+      } else {
+        elements.completion.classList.add("hidden");
+        elements.panel.classList.remove("hidden");
+        state.currentIndex = unansweredIndex;
+        renderQuestion();
+      }
+      updateProgress();
+    } finally {
+      elements.datasetSelect.disabled = false;
+      elements.workspace.removeAttribute("aria-busy");
+    }
+  }
+
   async function initialize() {
     try {
       if (!client.getStoredToken()) {
@@ -492,20 +571,10 @@
         return;
       }
 
-      const [session, questionResponse] = await Promise.all([
-        client.getSession(),
-        fetch(config.questionsPath, { cache: "no-store" })
-      ]);
-      if (!questionResponse.ok) throw new Error("The questions file could not be loaded.");
-
+      const session = await client.getSession();
       const user = session.user;
-      const assignment = user.assignment;
-      if (!assignment || !Number.isInteger(assignment.start) || !Number.isInteger(assignment.end) ||
-          !Number.isInteger(assignment.total) || assignment.total !== assignment.end - assignment.start + 1) {
-        throw new Error("Your question assignment is invalid.");
-      }
       state.username = user.username;
-      state.assignment = assignment;
+      state.user = user;
       sessionStorage.setItem(config.currentUserStorageKey, JSON.stringify(user));
       document.title = `${config.appTitle} - ${user.displayName}`;
       elements.appTitle.textContent = config.appTitle;
@@ -516,24 +585,9 @@
       bindEvents();
       window.setInterval(updateItemTimer, 1000);
 
-      const allQuestions = normalizeQuestions(await questionResponse.json());
-      state.totalQuestions = allQuestions.length;
-      state.questions = allQuestions.slice(assignment.start - 1, assignment.end);
-      if (state.questions.length !== assignment.total) throw new Error("Your assigned questions could not be loaded.");
-      elements.progressRange.textContent = assignment.total === allQuestions.length
-        ? `All samples ${assignment.start}-${assignment.end}`
-        : `Assigned samples ${assignment.start}-${assignment.end}`;
-      state.annotations = await client.loadAnnotations();
-      const unansweredIndex = findFirstUnanswered();
-      if (unansweredIndex === -1) {
-        state.currentIndex = 0;
-        showCompletion();
-      } else {
-        state.currentIndex = unansweredIndex;
-        renderQuestion();
-      }
-
-      updateProgress();
+      const storedDatasetId = sessionStorage.getItem(config.datasetStorageKey);
+      const initialDatasetId = config.datasets[storedDatasetId] ? storedDatasetId : config.defaultDatasetId;
+      await loadDataset(initialDatasetId);
       elements.loading.classList.add("hidden");
       elements.error.classList.add("hidden");
       elements.workspace.classList.remove("hidden");

@@ -5,3 +5,10 @@ export const VALIDATION_BASE_SOURCE_IDS = Object.freeze([
 ]);
 
 export const EXCLUDED_FIXED_SOURCE_IDS = Object.freeze([4, 8, 25, 45, 51, 54]);
+
+export const TRAINING_BASE_SOURCE_IDS = Object.freeze([
+  35, 45, 46, 40, 0, 25, 19, 1, 18, 54, 27, 44,
+  42, 16, 3, 52, 23, 51, 5, 8, 47, 58, 13, 30
+]);
+
+export const EXCLUDED_TRAINING_SOURCE_IDS = Object.freeze([24, 36]);

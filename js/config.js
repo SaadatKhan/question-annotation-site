@@ -3,7 +3,19 @@ window.APP_CONFIG = Object.freeze({
   resultsRepo: "question-annotation-results",
   resultsBranch: "main",
   annotationsDirectory: "annotations",
-  questionsPath: "data/questions.json",
+  defaultDatasetId: "test-validation",
+  datasets: Object.freeze({
+    training: Object.freeze({
+      label: "Training Round",
+      questionsPath: "data/training-questions.json",
+      resultsFile: "training-round.jsonl"
+    }),
+    "test-validation": Object.freeze({
+      label: "Test-validation set",
+      questionsPath: "data/questions.json",
+      resultsFile: "test-validation.jsonl"
+    })
+  }),
   apiBaseUrl: "https://question-annotation-api.question-annotation-site.workers.dev",
 
   appTitle: "Annotating Hypothetical Injections",
@@ -37,6 +49,7 @@ window.APP_CONFIG = Object.freeze({
   tokenStorageKey: "annotation_login_token",
   sessionTokenStorageKey: "annotation_session_token",
   currentUserStorageKey: "annotation_current_user",
+  datasetStorageKey: "annotation_dataset",
   currentIndexStorageKey: "annotation_current_index",
   maxCommentLength: 2000
 });

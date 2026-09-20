@@ -1,7 +1,12 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { EXCLUDED_FIXED_SOURCE_IDS, VALIDATION_BASE_SOURCE_IDS } from "./question-selection.mjs";
+import {
+  EXCLUDED_FIXED_SOURCE_IDS,
+  EXCLUDED_TRAINING_SOURCE_IDS,
+  TRAINING_BASE_SOURCE_IDS,
+  VALIDATION_BASE_SOURCE_IDS
+} from "./question-selection.mjs";
 import { repairMojibake } from "./repair-mojibake.mjs";
 
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
@@ -9,6 +14,7 @@ const repositoryRoot = resolve(scriptDirectory, "..");
 const originalSourcePath = resolve(repositoryRoot, process.argv[2] || "../injected_270_base.jsonl");
 const validationSourcePath = resolve(repositoryRoot, process.argv[3] || "../dataset_59_val_base.jsonl");
 const outputPath = resolve(repositoryRoot, process.argv[4] || "data/questions.json");
+const trainingOutputPath = resolve(repositoryRoot, process.argv[5] || "data/training-questions.json");
 
 async function readJsonl(path, label) {
   const raw = (await readFile(path, "utf8")).replace(/^\uFEFF/, "");
@@ -40,15 +46,24 @@ const excludedIds = new Set(EXCLUDED_FIXED_SOURCE_IDS);
 if (VALIDATION_BASE_SOURCE_IDS.some((id) => excludedIds.has(id))) {
   throw new Error("The validation selection includes a recently fixed source row.");
 }
+if (TRAINING_BASE_SOURCE_IDS.length !== 24 || new Set(TRAINING_BASE_SOURCE_IDS).size !== 24) {
+  throw new Error("The training selection must contain 24 unique source IDs.");
+}
+const validationIds = new Set(VALIDATION_BASE_SOURCE_IDS);
+const excludedTrainingIds = new Set(EXCLUDED_TRAINING_SOURCE_IDS);
+if (TRAINING_BASE_SOURCE_IDS.some((id) => validationIds.has(id) || excludedTrainingIds.has(id))) {
+  throw new Error("The training selection overlaps validation or includes an excluded source row.");
+}
 
-const seen = new Set();
+const evaluationSeen = new Set();
+const trainingSeen = new Set();
 const certaintyLabels = Object.freeze({
   C1: "Low certainty",
   C2: "Moderate certainty",
   C3: "High certainty"
 });
 
-function sanitizeQuestion(row, index, fields) {
+function sanitizeQuestion(row, index, fields, seen) {
   const { text, statement } = fields;
   if (row.id === undefined || !text || !row.original_question) {
     throw new Error(`Combined source row ${index + 1} is missing required fields.`);
@@ -82,7 +97,7 @@ const originalQuestions = originalRows.map((row, index) => {
   return sanitizeQuestion(row, index, {
     text: row.injected_question,
     statement: row.statement
-  });
+  }, evaluationSeen);
 });
 
 const validationById = new Map(validationRows.map((row) => [row.id, row]));
@@ -98,15 +113,42 @@ const validationQuestions = VALIDATION_BASE_SOURCE_IDS.map((sourceId, offset) =>
   return sanitizeQuestion(row, originalRows.length + offset, {
     text: row.perturbed_question,
     statement: row.injected_statement
-  });
+  }, evaluationSeen);
 });
 
 const questions = [...originalQuestions, ...validationQuestions];
+const trainingRows = TRAINING_BASE_SOURCE_IDS.map((sourceId) => {
+  const row = validationById.get(sourceId);
+  if (!row) throw new Error(`Training source ID ${sourceId} was not found.`);
+  if (row.hypothesis_type !== "correct" || row.hypothesis !== row.correct_answer) {
+    throw new Error(`Training source ID ${sourceId} is not a correct-answer base record.`);
+  }
+  return row;
+});
+for (const [index, half] of [trainingRows.slice(0, 12), trainingRows.slice(12)].entries()) {
+  const count = (field, value) => half.filter((row) => row[field] === value).length;
+  if (count("role", "patient") !== 6 || count("role", "clinician") !== 6 ||
+      count("source_level", "S0") !== 5 || count("source_level", "S_low") !== 2 ||
+      count("source_level", "S_high") !== 5) {
+    throw new Error(`Training half ${index + 1} is not balanced as configured.`);
+  }
+}
+const trainingQuestions = trainingRows.map((row, index) => {
+  return sanitizeQuestion(row, index, {
+    text: row.perturbed_question,
+    statement: row.injected_statement
+  }, trainingSeen);
+});
+
 const serialized = `${JSON.stringify(questions, null, 2)}\n`;
-if (serialized.includes('"correct_answer"') || serialized.includes('"hypothesis_type"')) {
+const trainingSerialized = `${JSON.stringify(trainingQuestions, null, 2)}\n`;
+if (`${serialized}${trainingSerialized}`.includes('"correct_answer"') ||
+    `${serialized}${trainingSerialized}`.includes('"hypothesis_type"')) {
   throw new Error("A protected gold-label field leaked into the browser dataset.");
 }
 
 await mkdir(dirname(outputPath), { recursive: true });
 await writeFile(outputPath, serialized, "utf8");
-console.log(`Wrote ${questions.length} sanitized base questions to ${outputPath}`);
+await writeFile(trainingOutputPath, trainingSerialized, "utf8");
+console.log(`Wrote ${questions.length} test-validation questions to ${outputPath}`);
+console.log(`Wrote ${trainingQuestions.length} training questions to ${trainingOutputPath}`);

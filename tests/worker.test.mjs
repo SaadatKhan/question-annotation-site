@@ -66,6 +66,8 @@ test("login issues a session without exposing credential data", async () => {
   assert.equal(response.status, 200);
   assert.equal(payload.user.role, "annotator");
   assert.deepEqual(payload.user.assignment, { start: 1, end: 150, total: 150 });
+  assert.deepEqual(payload.user.assignments.training, { start: 1, end: 12, total: 12 });
+  assert.deepEqual(payload.user.assignments["test-validation"], { start: 1, end: 150, total: 150 });
   assert.equal(typeof payload.token, "string");
   assert.equal(payload.user.passwordHash, undefined);
 
@@ -123,15 +125,48 @@ test("saving writes the authenticated user's JSONL file", async (context) => {
   assert.equal(response.status, 200);
   const saved = (await response.json()).annotation;
   assert.equal(saved.annotator, "annotator1");
-  assert.equal(saved.schema_version, 3);
+  assert.equal(saved.schema_version, 4);
+  assert.equal(saved.dataset, "test-validation");
   assert.equal(saved.certainty_assigned, "C2");
   assert.equal(saved.ms_on_item, 4300);
-  assert.equal(calls.length, 2);
-  assert.match(calls[1].url, /annotations\/annotator1\.jsonl$/);
-  assert.equal(calls[1].options.headers.Authorization, "Bearer github-test-token");
-  const gitBody = JSON.parse(calls[1].options.body);
+  assert.equal(calls.length, 3);
+  assert.match(calls[2].url, /annotations\/annotator1\/test-validation\.jsonl$/);
+  assert.equal(calls[2].options.headers.Authorization, "Bearer github-test-token");
+  const gitBody = JSON.parse(calls[2].options.body);
   const jsonl = Buffer.from(gitBody.content, "base64").toString("utf8");
   assert.equal(JSON.parse(jsonl).annotator, "annotator1");
+});
+
+test("training saves use the separate training-round JSONL file", async (context) => {
+  const { payload } = await login("annotator1", "a-strong-user-password");
+  const originalFetch = globalThis.fetch;
+  const calls = [];
+  globalThis.fetch = async (url, options) => {
+    calls.push({ url: String(url), options });
+    if ((options.method || "GET") === "GET") return new Response("{}", { status: 404 });
+    return Response.json({ content: { sha: "saved" } });
+  };
+  context.after(() => { globalThis.fetch = originalFetch; });
+
+  const response = await worker.fetch(request("/api/annotations", {
+    method: "PUT",
+    headers: { Authorization: `Bearer ${payload.token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      dataset: "training",
+      sample_id: "sample_000",
+      question_index: 0,
+      certainty_assigned: "C1",
+      certainty_intended: "C1",
+      ms_on_item: 1200,
+      is_hypothetical: "yes",
+      fits_naturally: "yes"
+    })
+  }), env);
+
+  assert.equal(response.status, 200);
+  assert.equal((await response.json()).annotation.dataset, "training");
+  assert.equal(calls.length, 2);
+  assert.match(calls[1].url, /annotations\/annotator1\/training-round\.jsonl$/);
 });
 
 test("saving requires a certainty level and both Yes/No answers", async () => {
@@ -159,8 +194,9 @@ test("annotators cannot save outside their assigned question range", async () =>
     method: "PUT",
     headers: { Authorization: `Bearer ${payload.token}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      sample_id: "sample_200",
-      question_index: 200,
+      dataset: "training",
+      sample_id: "sample_012",
+      question_index: 12,
       certainty_assigned: "C1",
       certainty_intended: "C1",
       ms_on_item: 1000,
