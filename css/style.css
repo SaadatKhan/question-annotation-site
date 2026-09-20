@@ -350,19 +350,15 @@ textarea {
 }
 
 .dataset-switcher {
-  display: grid;
-  gap: 2px;
-  color: var(--muted);
-  font-size: 0.68rem;
-  font-weight: 750;
+  display: block;
 }
 
 .dataset-switcher select {
-  min-height: 36px;
+  min-height: 40px;
   max-width: 190px;
   border: 1px solid var(--border-strong);
   border-radius: 6px;
-  padding: 6px 30px 6px 10px;
+  padding: 8px 30px 8px 12px;
   background: var(--surface);
   color: var(--text);
   cursor: pointer;
