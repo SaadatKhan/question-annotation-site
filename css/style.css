@@ -1030,11 +1030,27 @@ textarea {
 }
 
 .progress-cell {
-  min-width: 106px;
+  min-width: 190px;
 }
 
-.progress-cell strong {
-  display: block;
+.round-progress-item + .round-progress-item {
+  border-top: 1px solid var(--border);
+  margin-top: 11px;
+  padding-top: 9px;
+}
+
+.round-progress-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.round-progress-heading span {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 750;
+  white-space: nowrap;
 }
 
 .assignment-range {
@@ -1047,7 +1063,7 @@ textarea {
 
 .mini-progress-track {
   display: block;
-  width: 88px;
+  width: 100%;
   height: 5px;
   overflow: hidden;
   border-radius: 3px;

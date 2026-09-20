@@ -27,6 +27,7 @@
   const state = {
     users: [],
     datasetId: config.defaultDatasetId,
+    statusByDataset: {},
     totalQuestions: 300,
     refreshing: false
   };
@@ -97,6 +98,12 @@
 
   function renderTable(rows) {
     elements.tableBody.replaceChildren();
+    const rowsByDataset = Object.fromEntries(
+      Object.entries(state.statusByDataset).map(([datasetId, data]) => [
+        datasetId,
+        new Map(data.rows.map((row) => [row.user.username, row]))
+      ])
+    );
     rows.forEach(({ user, summary, status: statusKey, resultsPath }) => {
       const row = document.createElement("tr");
       const personCell = document.createElement("td");
@@ -119,20 +126,32 @@
       row.append(statusCell);
 
       const progressCell = document.createElement("td");
-      progressCell.className = "progress-cell";
-      const assignment = user.assignment || { start: 1, end: state.totalQuestions, total: state.totalQuestions };
-      const progressText = document.createElement("strong");
-      progressText.textContent = `${summary.completed}/${assignment.total}`;
-      const assignmentRange = document.createElement("span");
-      assignmentRange.className = "assignment-range";
-      assignmentRange.textContent = `Samples ${assignment.start}-${assignment.end}`;
-      const track = document.createElement("span");
-      track.className = "mini-progress-track";
-      const fill = document.createElement("span");
-      fill.className = "mini-progress-fill";
-      fill.style.width = `${Math.round((summary.completed / assignment.total) * 100)}%`;
-      track.append(fill);
-      progressCell.append(progressText, assignmentRange, track);
+      progressCell.className = "progress-cell round-progress-cell";
+      ["training", "test-validation"].forEach((datasetId) => {
+        const roundRow = rowsByDataset[datasetId]?.get(user.username);
+        if (!roundRow) return;
+        const assignment = roundRow.user.assignment;
+        const item = document.createElement("div");
+        item.className = "round-progress-item";
+        const heading = document.createElement("div");
+        heading.className = "round-progress-heading";
+        const label = document.createElement("span");
+        label.textContent = config.datasets[datasetId].label;
+        const progressText = document.createElement("strong");
+        progressText.textContent = `${roundRow.summary.completed}/${assignment.total}`;
+        heading.append(label, progressText);
+        const assignmentRange = document.createElement("span");
+        assignmentRange.className = "assignment-range";
+        assignmentRange.textContent = `Samples ${assignment.start}-${assignment.end}`;
+        const track = document.createElement("span");
+        track.className = "mini-progress-track";
+        const fill = document.createElement("span");
+        fill.className = "mini-progress-fill";
+        fill.style.width = `${Math.round((roundRow.summary.completed / assignment.total) * 100)}%`;
+        track.append(fill);
+        item.append(heading, assignmentRange, track);
+        progressCell.append(item);
+      });
       row.append(progressCell);
 
       appendTextCell(row, formatTaskCounts(summary.taskCounts?.hypothetical), "task-count-cell");
@@ -171,7 +190,15 @@
     elements.warning.classList.add("hidden");
 
     try {
-      const data = await api.loadAdminStatus(state.datasetId);
+      const [trainingData, validationData] = await Promise.all([
+        api.loadAdminStatus("training"),
+        api.loadAdminStatus("test-validation")
+      ]);
+      state.statusByDataset = {
+        training: trainingData,
+        "test-validation": validationData
+      };
+      const data = state.statusByDataset[state.datasetId];
       state.users = data.users;
       state.datasetId = data.dataset;
       state.totalQuestions = data.totalQuestions;
@@ -190,8 +217,8 @@
         0
       );
       const percentage = possible ? Math.round((saved / possible) * 100) : 0;
-      elements.totalProgress.textContent = `${saved} of ${possible} total annotations (${percentage}%)`;
-      elements.updated.textContent = `Updated ${new Intl.DateTimeFormat(undefined, {
+      elements.totalProgress.textContent = `${data.datasetLabel}: ${saved} of ${possible} total annotations (${percentage}%)`;
+      elements.updated.textContent = `${data.datasetLabel} details - Updated ${new Intl.DateTimeFormat(undefined, {
         hour: "numeric",
         minute: "2-digit",
         second: "2-digit"
