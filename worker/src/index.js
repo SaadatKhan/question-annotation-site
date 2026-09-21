@@ -10,7 +10,11 @@ const DATASETS = Object.freeze({
       annotator1: Object.freeze({ start: 1, end: 12, total: 12 }),
       annotator2: Object.freeze({ start: 1, end: 12, total: 12 }),
       annotator3: Object.freeze({ start: 13, end: 24, total: 12 }),
-      annotator4: Object.freeze({ start: 13, end: 24, total: 12 })
+      annotator4: Object.freeze({ start: 13, end: 24, total: 12 }),
+      jonathannebiyu: Object.freeze({ start: 1, end: 12, total: 12 }),
+      nathanquan: Object.freeze({ start: 1, end: 12, total: 12 }),
+      parikansara: Object.freeze({ start: 13, end: 24, total: 12 }),
+      haifaabdulhamid: Object.freeze({ start: 13, end: 24, total: 12 })
     })
   }),
   "test-validation": Object.freeze({
@@ -21,7 +25,11 @@ const DATASETS = Object.freeze({
       annotator1: Object.freeze({ start: 1, end: 150, total: 150 }),
       annotator2: Object.freeze({ start: 1, end: 150, total: 150 }),
       annotator3: Object.freeze({ start: 151, end: 300, total: 150 }),
-      annotator4: Object.freeze({ start: 151, end: 300, total: 150 })
+      annotator4: Object.freeze({ start: 151, end: 300, total: 150 }),
+      jonathannebiyu: Object.freeze({ start: 1, end: 150, total: 150 }),
+      nathanquan: Object.freeze({ start: 1, end: 150, total: 150 }),
+      parikansara: Object.freeze({ start: 151, end: 300, total: 150 }),
+      haifaabdulhamid: Object.freeze({ start: 151, end: 300, total: 150 })
     })
   })
 });

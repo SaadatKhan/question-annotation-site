@@ -59,7 +59,7 @@ The annotation workspace opens `guidelines/annotation-guideline-2026-09-17.pdf` 
 
 Each completed sample records a three-level certainty judgment (`C1` Weak, `C2` Moderate, `C3` Strong) and two Yes/No judgments: whether the inserted possibility remains unconfirmed without introducing additional clinical detail, and whether the sentence fits the question. The optional comment and could-not-decide flag are available for every sample. The interface preserves line breaks embedded in question text.
 
-For the test-validation set, `Annotator1` and `Annotator2` receive samples 1-150, while `Annotator3` and `Annotator4` receive samples 151-300. For the training round, the same pairs receive samples 1-12 and 13-24 respectively. Administrators receive every sample in both sets. The Worker enforces these ranges in addition to the browser filtering them.
+For the test-validation set, `JonathanNebiyu` and `NathanQuan` receive samples 1-150, while `PariKansara` and `HaifaAbdulhamid` receive samples 151-300. For the training round, the same pairs receive samples 1-12 and 13-24 respectively. Administrators receive every sample in both sets. The Worker enforces these ranges in addition to the browser filtering them.
 
 The public dataset combines the original 270 base records with 30 records selected from `dataset_59_val_base.jsonl`. The added source IDs are recorded in `scripts/question-selection.mjs`; none come from the distractor arm, and source IDs 4, 8, 25, 45, 51, and 54 are explicitly excluded. The selected records are balanced across patient/clinician roles and retain approximately proportional source and certainty classes. Gold answers and source metadata are removed from the browser dataset.
 

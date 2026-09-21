@@ -29,7 +29,7 @@ function user(username, password, role) {
 
 const users = [
   user("SaadatKhan", "a-strong-admin-password", "admin"),
-  user("annotator1", "a-strong-user-password", "annotator")
+  user("JonathanNebiyu", "a-strong-user-password", "annotator")
 ];
 
 const env = {
@@ -62,7 +62,7 @@ async function login(username, password) {
 }
 
 test("login issues a session without exposing credential data", async () => {
-  const { response, payload } = await login("annotator1", "a-strong-user-password");
+  const { response, payload } = await login("JonathanNebiyu", "a-strong-user-password");
   assert.equal(response.status, 200);
   assert.equal(payload.user.role, "annotator");
   assert.deepEqual(payload.user.assignment, { start: 1, end: 150, total: 150 });
@@ -75,11 +75,11 @@ test("login issues a session without exposing credential data", async () => {
     headers: { Authorization: `Bearer ${payload.token}` }
   }), env);
   assert.equal(sessionResponse.status, 200);
-  assert.equal((await sessionResponse.json()).user.username, "annotator1");
+  assert.equal((await sessionResponse.json()).user.username, "JonathanNebiyu");
 });
 
 test("invalid credentials and disallowed origins are rejected", async () => {
-  assert.equal((await login("annotator1", "wrong-password")).response.status, 401);
+  assert.equal((await login("JonathanNebiyu", "wrong-password")).response.status, 401);
   const response = await worker.fetch(new Request("https://api.example.test/api/health", {
     headers: { Origin: "https://untrusted.example" }
   }), env);
@@ -87,7 +87,7 @@ test("invalid credentials and disallowed origins are rejected", async () => {
 });
 
 test("annotators cannot open the admin endpoint", async () => {
-  const { payload } = await login("annotator1", "a-strong-user-password");
+  const { payload } = await login("JonathanNebiyu", "a-strong-user-password");
   const response = await worker.fetch(request("/api/admin/status", {
     headers: { Authorization: `Bearer ${payload.token}` }
   }), env);
@@ -95,7 +95,7 @@ test("annotators cannot open the admin endpoint", async () => {
 });
 
 test("saving writes the authenticated user's JSONL file", async (context) => {
-  const { payload } = await login("annotator1", "a-strong-user-password");
+  const { payload } = await login("JonathanNebiyu", "a-strong-user-password");
   const originalFetch = globalThis.fetch;
   const calls = [];
   globalThis.fetch = async (url, options) => {
@@ -124,21 +124,21 @@ test("saving writes the authenticated user's JSONL file", async (context) => {
 
   assert.equal(response.status, 200);
   const saved = (await response.json()).annotation;
-  assert.equal(saved.annotator, "annotator1");
+  assert.equal(saved.annotator, "JonathanNebiyu");
   assert.equal(saved.schema_version, 4);
   assert.equal(saved.dataset, "test-validation");
   assert.equal(saved.certainty_assigned, "C2");
   assert.equal(saved.ms_on_item, 4300);
   assert.equal(calls.length, 3);
-  assert.match(calls[2].url, /annotations\/annotator1\/test-validation\.jsonl$/);
+  assert.match(calls[2].url, /annotations\/JonathanNebiyu\/test-validation\.jsonl$/);
   assert.equal(calls[2].options.headers.Authorization, "Bearer github-test-token");
   const gitBody = JSON.parse(calls[2].options.body);
   const jsonl = Buffer.from(gitBody.content, "base64").toString("utf8");
-  assert.equal(JSON.parse(jsonl).annotator, "annotator1");
+  assert.equal(JSON.parse(jsonl).annotator, "JonathanNebiyu");
 });
 
 test("training saves use the separate training-round JSONL file", async (context) => {
-  const { payload } = await login("annotator1", "a-strong-user-password");
+  const { payload } = await login("JonathanNebiyu", "a-strong-user-password");
   const originalFetch = globalThis.fetch;
   const calls = [];
   globalThis.fetch = async (url, options) => {
@@ -166,11 +166,11 @@ test("training saves use the separate training-round JSONL file", async (context
   assert.equal(response.status, 200);
   assert.equal((await response.json()).annotation.dataset, "training");
   assert.equal(calls.length, 2);
-  assert.match(calls[1].url, /annotations\/annotator1\/training-round\.jsonl$/);
+  assert.match(calls[1].url, /annotations\/JonathanNebiyu\/training-round\.jsonl$/);
 });
 
 test("saving requires a certainty level and both Yes/No answers", async () => {
-  const { payload } = await login("annotator1", "a-strong-user-password");
+  const { payload } = await login("JonathanNebiyu", "a-strong-user-password");
   const response = await worker.fetch(request("/api/annotations", {
     method: "PUT",
     headers: { Authorization: `Bearer ${payload.token}`, "Content-Type": "application/json" },
@@ -189,7 +189,7 @@ test("saving requires a certainty level and both Yes/No answers", async () => {
 });
 
 test("annotators cannot save outside their assigned question range", async () => {
-  const { payload } = await login("annotator1", "a-strong-user-password");
+  const { payload } = await login("JonathanNebiyu", "a-strong-user-password");
   const response = await worker.fetch(request("/api/annotations", {
     method: "PUT",
     headers: { Authorization: `Bearer ${payload.token}`, "Content-Type": "application/json" },
