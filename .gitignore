@@ -9,3 +9,4 @@ node_modules/
 auth-users.json
 .password-pepper
 account-credentials.txt
+tmp.txt
