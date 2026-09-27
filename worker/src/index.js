@@ -86,6 +86,11 @@ export default {
         requireAdmin(session.user);
         return json(await adminStatus(datasetIdFromUrl(url), env), 200, cors);
       }
+      if (route === "GET /api/admin/annotations") {
+        requireAdmin(session.user);
+        const username = url.searchParams.get("username") || "";
+        return json(await adminAnnotations(username, datasetIdFromUrl(url), env), 200, cors);
+      }
 
       return json({ error: "Endpoint not found." }, 404, cors);
     } catch (error) {
@@ -334,6 +339,34 @@ async function adminStatus(datasetId, env) {
     rows,
     totalQuestions: dataset.totalQuestions,
     updatedAt: new Date().toISOString()
+  };
+}
+
+async function adminAnnotations(username, datasetId, env) {
+  if (!/^[A-Za-z0-9_-]{2,40}$/.test(username)) {
+    throw httpError(400, "The annotator username is invalid.");
+  }
+  const configuredUsers = parseUsers(env.AUTH_USERS_JSON);
+  const target = configuredUsers.find((user) => user.username.toLowerCase() === username.toLowerCase());
+  if (!target) throw httpError(404, "The annotator account was not found.");
+
+  const dataset = DATASETS[datasetId];
+  const assignment = assignmentForUser(target, datasetId);
+  const file = await getAnnotationFile(target.username, datasetId, env);
+  const annotations = deduplicate(file.records)
+    .filter((record) => {
+      const index = Number(record.question_index);
+      return Number.isInteger(index) && index >= 0 && index < dataset.totalQuestions &&
+        String(record.sample_id) === `sample_${String(index).padStart(3, "0")}` &&
+        recordIsAssigned(record, assignment);
+    })
+    .sort((left, right) => left.question_index - right.question_index);
+
+  return {
+    dataset: datasetId,
+    datasetLabel: dataset.label,
+    user: { ...publicUser(target), assignment },
+    annotations
   };
 }
 

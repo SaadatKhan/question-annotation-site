@@ -123,7 +123,7 @@ Copy the resulting `workers.dev` URL into `apiBaseUrl` in `js/config.js`. Do not
 - Invalidate every active login by replacing `SESSION_SECRET`.
 - Usernames determine JSONL filenames and should not be changed after annotation begins.
 
-The admin dashboard distinguishes accounts that have never signed in, users who signed in but have not saved, active annotators, completed annotators, and disabled accounts. Only a session whose server-side role is `admin` can request dashboard data.
+The admin dashboard distinguishes accounts that have never signed in, users who signed in but have not saved, active annotators, completed annotators, and disabled accounts. For any annotator with saved work, the dashboard's Review button opens an in-site question viewer showing the highlighted insertion, selected answers, comment, review flag, time spent, and save time for the currently selected study set. Only a session whose server-side role is `admin` can request dashboard or saved-response data.
 
 ## Local development
 

@@ -66,6 +66,13 @@ assert.deepEqual(trainingAssignmentByUsername.get("PariKansara"), { start: 13, e
 assert.deepEqual(trainingAssignmentByUsername.get("HaifaAbdulhamid"), { start: 13, end: 24, total: 12 });
 assert.deepEqual(trainingAssignmentByUsername.get("SaadatKhan"), { start: 1, end: 24, total: 24 });
 assert.deepEqual(trainingAssignmentByUsername.get("KevinLybarger"), { start: 1, end: 24, total: 24 });
+const reviewResponses = await request("/api/admin/annotations?dataset=training&username=PariKansara", {
+  headers: adminHeaders
+});
+assert.equal(reviewResponses.response.status, 200, reviewResponses.body.error || "Admin response review failed.");
+assert.equal(reviewResponses.body.dataset, "training");
+assert.equal(reviewResponses.body.user.username, "PariKansara");
+assert.ok(Array.isArray(reviewResponses.body.annotations));
 const inProgress = dashboard.body.rows.filter((row) => row.status === "active").length;
 const notStarted = dashboard.body.rows.filter((row) => ["ready", "signed_in"].includes(row.status)).length;
 
@@ -77,6 +84,10 @@ const forbidden = await request("/api/admin/status", {
   headers: { Authorization: `Bearer ${annotatorLogin.body.token}` }
 });
 assert.equal(forbidden.response.status, 403, "Annotator unexpectedly accessed the admin dashboard.");
+const forbiddenReview = await request("/api/admin/annotations?dataset=training&username=PariKansara", {
+  headers: { Authorization: `Bearer ${annotatorLogin.body.token}` }
+});
+assert.equal(forbiddenReview.response.status, 403, "Annotator unexpectedly accessed saved-response review.");
 
 const [indexResponse, configResponse, validationDataResponse, trainingDataResponse] = await Promise.all([
   fetch(`${siteRoot}?smoke=${Date.now()}`),

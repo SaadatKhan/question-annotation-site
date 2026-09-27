@@ -92,6 +92,12 @@
     return request(`/api/admin/status?dataset=${encodeURIComponent(selectedDataset)}`);
   }
 
+  async function loadAdminAnnotations(username, datasetId) {
+    const selectedDataset = datasetId || config.defaultDatasetId;
+    return request(`/api/admin/annotations?dataset=${encodeURIComponent(selectedDataset)}` +
+      `&username=${encodeURIComponent(username)}`);
+  }
+
   window.AnnotationApi = Object.freeze({
     ApiError,
     getStoredToken,
@@ -101,6 +107,7 @@
     getSession,
     loadAnnotations,
     saveAnnotation,
-    loadAdminStatus
+    loadAdminStatus,
+    loadAdminAnnotations
   });
 })();

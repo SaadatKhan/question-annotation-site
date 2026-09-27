@@ -126,6 +126,68 @@
     </div>
   </main>
 
+  <div id="results-review-backdrop" class="results-review-backdrop hidden" aria-hidden="true"></div>
+  <aside id="results-review-panel" class="results-review-panel hidden" role="dialog" aria-modal="true"
+         aria-labelledby="results-review-title" tabindex="-1">
+    <header class="results-review-header">
+      <div>
+        <p id="results-review-round" class="eyebrow"></p>
+        <h2 id="results-review-title">Saved responses</h2>
+        <p id="results-review-subtitle" class="results-review-subtitle"></p>
+      </div>
+      <button id="results-review-close" class="secondary-button" type="button">Close</button>
+    </header>
+
+    <div id="results-review-loading" class="results-review-loading" aria-live="polite">
+      <div class="spinner" aria-hidden="true"></div>
+      <p>Loading saved responses...</p>
+    </div>
+    <div id="results-review-error" class="results-review-error hidden" role="alert"></div>
+
+    <div id="results-review-content" class="results-review-content hidden">
+      <div class="results-review-toolbar">
+        <div>
+          <strong id="results-review-position"></strong>
+          <code id="results-review-sample-id"></code>
+        </div>
+        <div class="results-review-navigation" aria-label="Saved response navigation">
+          <button id="results-review-previous" class="secondary-button review-arrow" type="button"
+                  aria-label="Previous saved response" title="Previous saved response">&larr;</button>
+          <button id="results-review-next" class="secondary-button review-arrow" type="button"
+                  aria-label="Next saved response" title="Next saved response">&rarr;</button>
+        </div>
+      </div>
+
+      <section class="results-review-question" aria-labelledby="results-review-question-title">
+        <h3 id="results-review-question-title">Injected question</h3>
+        <div id="results-review-question" class="question-text"></div>
+        <ol id="results-review-options" class="question-options" type="A"></ol>
+        <details class="results-review-original">
+          <summary>View original question</summary>
+          <div id="results-review-original-question" class="comparison-text"></div>
+        </details>
+      </section>
+
+      <section class="results-review-response" aria-labelledby="results-review-response-title">
+        <div class="results-review-section-heading">
+          <h3 id="results-review-response-title">Annotator response</h3>
+          <span id="results-review-saved-at"></span>
+        </div>
+        <div id="results-review-answers" class="results-review-answers"></div>
+        <div class="results-review-notes">
+          <div>
+            <span class="results-review-label">Comment</span>
+            <p id="results-review-comment"></p>
+          </div>
+          <div class="results-review-metadata">
+            <span id="results-review-flag"></span>
+            <span id="results-review-time"></span>
+          </div>
+        </div>
+      </section>
+    </div>
+  </aside>
+
   <script src="js/config.js"></script>
   <script src="js/api.js"></script>
   <script src="js/admin.js"></script>

@@ -92,6 +92,11 @@ test("annotators cannot open the admin endpoint", async () => {
     headers: { Authorization: `Bearer ${payload.token}` }
   }), env);
   assert.equal(response.status, 403);
+  const annotationsResponse = await worker.fetch(request(
+    "/api/admin/annotations?dataset=test-validation&username=SaadatKhan",
+    { headers: { Authorization: `Bearer ${payload.token}` } }
+  ), env);
+  assert.equal(annotationsResponse.status, 403);
 });
 
 test("saving writes the authenticated user's JSONL file", async (context) => {
@@ -247,4 +252,14 @@ test("admin progress counts only complete three-question records", async (contex
   assert.deepEqual(row.summary.taskCounts.hypothetical, { yes: 0, no: 1 });
   assert.deepEqual(row.summary.taskCounts.certainty, { yes: 0, no: 1 });
   assert.deepEqual(row.summary.taskCounts.coherence, { yes: 2, no: 0 });
+
+  const annotationsResponse = await worker.fetch(request(
+    "/api/admin/annotations?dataset=test-validation&username=SaadatKhan",
+    { headers: { Authorization: `Bearer ${payload.token}` } }
+  ), env);
+  assert.equal(annotationsResponse.status, 200);
+  const annotationsPayload = await annotationsResponse.json();
+  assert.equal(annotationsPayload.dataset, "test-validation");
+  assert.equal(annotationsPayload.user.username, "SaadatKhan");
+  assert.equal(annotationsPayload.annotations.length, 2);
 });
