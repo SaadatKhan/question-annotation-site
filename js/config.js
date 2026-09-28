@@ -10,6 +10,11 @@ window.APP_CONFIG = Object.freeze({
       questionsPath: "data/training-questions.json",
       resultsFile: "training-round.jsonl"
     }),
+    "training-2": Object.freeze({
+      label: "Training Round 2",
+      questionsPath: "data/training-questions.json",
+      resultsFile: "training-round-2.jsonl"
+    }),
     "training-3": Object.freeze({
       label: "Training Round 3",
       questionsPath: "data/training-round-3-questions.json",

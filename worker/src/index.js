@@ -17,6 +17,21 @@ const DATASETS = Object.freeze({
       haifaabdulhamid: Object.freeze({ start: 13, end: 24, total: 12 })
     })
   }),
+  "training-2": Object.freeze({
+    label: "Training Round 2",
+    totalQuestions: 24,
+    fileName: "training-round-2.jsonl",
+    assignments: Object.freeze({
+      annotator1: Object.freeze({ start: 13, end: 24, total: 12 }),
+      annotator2: Object.freeze({ start: 13, end: 24, total: 12 }),
+      annotator3: Object.freeze({ start: 1, end: 12, total: 12 }),
+      annotator4: Object.freeze({ start: 1, end: 12, total: 12 }),
+      jonathannebiyu: Object.freeze({ start: 13, end: 24, total: 12 }),
+      nathanquan: Object.freeze({ start: 13, end: 24, total: 12 }),
+      parikansara: Object.freeze({ start: 1, end: 12, total: 12 }),
+      haifaabdulhamid: Object.freeze({ start: 1, end: 12, total: 12 })
+    })
+  }),
   "training-3": Object.freeze({
     label: "Training Round 3",
     totalQuestions: 10,

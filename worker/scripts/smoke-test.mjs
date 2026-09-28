@@ -41,6 +41,13 @@ assert.ok(Array.isArray(annotations.body.annotations));
 const trainingAnnotations = await request("/api/annotations?dataset=training", { headers: adminHeaders });
 assert.equal(trainingAnnotations.response.status, 200, trainingAnnotations.body.error || "Training annotations failed.");
 assert.ok(Array.isArray(trainingAnnotations.body.annotations));
+const trainingRound2Annotations = await request("/api/annotations?dataset=training-2", { headers: adminHeaders });
+assert.equal(
+  trainingRound2Annotations.response.status,
+  200,
+  trainingRound2Annotations.body.error || "Training Round 2 annotations failed."
+);
+assert.ok(Array.isArray(trainingRound2Annotations.body.annotations));
 const trainingRound3Annotations = await request("/api/annotations?dataset=training-3", { headers: adminHeaders });
 assert.equal(
   trainingRound3Annotations.response.status,
@@ -73,6 +80,22 @@ assert.deepEqual(trainingAssignmentByUsername.get("PariKansara"), { start: 13, e
 assert.deepEqual(trainingAssignmentByUsername.get("HaifaAbdulhamid"), { start: 13, end: 24, total: 12 });
 assert.deepEqual(trainingAssignmentByUsername.get("SaadatKhan"), { start: 1, end: 24, total: 24 });
 assert.deepEqual(trainingAssignmentByUsername.get("KevinLybarger"), { start: 1, end: 24, total: 24 });
+const trainingRound2Dashboard = await request("/api/admin/status?dataset=training-2", { headers: adminHeaders });
+assert.equal(
+  trainingRound2Dashboard.response.status,
+  200,
+  trainingRound2Dashboard.body.error || "Training Round 2 dashboard failed."
+);
+assert.equal(trainingRound2Dashboard.body.dataset, "training-2");
+const trainingRound2AssignmentByUsername = new Map(
+  trainingRound2Dashboard.body.users.map((user) => [user.username, user.assignment])
+);
+assert.deepEqual(trainingRound2AssignmentByUsername.get("JonathanNebiyu"), { start: 13, end: 24, total: 12 });
+assert.deepEqual(trainingRound2AssignmentByUsername.get("NathanQuan"), { start: 13, end: 24, total: 12 });
+assert.deepEqual(trainingRound2AssignmentByUsername.get("PariKansara"), { start: 1, end: 12, total: 12 });
+assert.deepEqual(trainingRound2AssignmentByUsername.get("HaifaAbdulhamid"), { start: 1, end: 12, total: 12 });
+assert.deepEqual(trainingRound2AssignmentByUsername.get("SaadatKhan"), { start: 1, end: 24, total: 24 });
+assert.deepEqual(trainingRound2AssignmentByUsername.get("KevinLybarger"), { start: 1, end: 24, total: 24 });
 const trainingRound3Dashboard = await request("/api/admin/status?dataset=training-3", { headers: adminHeaders });
 assert.equal(
   trainingRound3Dashboard.response.status,
@@ -133,8 +156,9 @@ assert.equal(trainingData.length, 24);
 assert.equal(trainingRound3Data.length, 10);
 
 console.log(
-  `Live smoke tests passed: three datasets, 6 users, assigned ranges, ` +
-  `${annotations.body.annotations.length} test-validation, ${trainingAnnotations.body.annotations.length} Round 1, and ` +
+  `Live smoke tests passed: four datasets, 6 users, assigned ranges, ` +
+  `${annotations.body.annotations.length} test-validation, ${trainingAnnotations.body.annotations.length} Round 1, ` +
+  `${trainingRound2Annotations.body.annotations.length} Round 2, and ` +
   `${trainingRound3Annotations.body.annotations.length} Round 3 admin annotations, ` +
   `${inProgress} in progress, ${notStarted} not started.`
 );
