@@ -52,6 +52,14 @@ test("Training Round 3 contains the ten new sanitized base samples", async () =>
   assert.equal(questions.length, 10);
   assert.equal(questions[0].id, "sample_000");
   assert.equal(questions.at(-1).id, "sample_009");
+  assert.equal(
+    questions[6].statement,
+    "The medical practitioner noted that the evidence is highly consistent with caustic ingestion."
+  );
+  assert.equal(
+    questions[8].statement,
+    "The treating doctor noted, per a specialist consultation note, that the most appropriate next step is almost certainly an electrocardiogram."
+  );
   assert.ok(strings.every((value) => repairMojibake(value) === value));
   assert.ok(questions.every((question) => !Object.hasOwn(question, "correct_answer")));
 });
