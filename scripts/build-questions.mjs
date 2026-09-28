@@ -15,6 +15,8 @@ const originalSourcePath = resolve(repositoryRoot, process.argv[2] || "../inject
 const validationSourcePath = resolve(repositoryRoot, process.argv[3] || "../dataset_59_val_base.jsonl");
 const outputPath = resolve(repositoryRoot, process.argv[4] || "data/questions.json");
 const trainingOutputPath = resolve(repositoryRoot, process.argv[5] || "data/training-questions.json");
+const trainingRound3SourcePath = resolve(repositoryRoot, process.argv[6] || "../dataset_10_val_add_base.jsonl");
+const trainingRound3OutputPath = resolve(repositoryRoot, process.argv[7] || "data/training-round-3-questions.json");
 
 async function readJsonl(path, label) {
   const raw = (await readFile(path, "utf8")).replace(/^\uFEFF/, "");
@@ -32,12 +34,16 @@ async function readJsonl(path, label) {
 
 const originalRows = await readJsonl(originalSourcePath, "Original source");
 const validationRows = await readJsonl(validationSourcePath, "Validation source");
+const trainingRound3Rows = await readJsonl(trainingRound3SourcePath, "Training Round 3 source");
 
 if (originalRows.length !== 270) {
   throw new Error(`Expected 270 original base records but found ${originalRows.length}.`);
 }
 if (validationRows.length !== 59) {
   throw new Error(`Expected 59 validation base records but found ${validationRows.length}.`);
+}
+if (trainingRound3Rows.length !== 10) {
+  throw new Error(`Expected 10 Training Round 3 records but found ${trainingRound3Rows.length}.`);
 }
 if (VALIDATION_BASE_SOURCE_IDS.length !== 30 || new Set(VALIDATION_BASE_SOURCE_IDS).size !== 30) {
   throw new Error("The validation selection must contain 30 unique source IDs.");
@@ -57,6 +63,7 @@ if (TRAINING_BASE_SOURCE_IDS.some((id) => validationIds.has(id) || excludedTrain
 
 const evaluationSeen = new Set();
 const trainingSeen = new Set();
+const trainingRound3Seen = new Set();
 const certaintyLabels = Object.freeze({
   C1: "Low certainty",
   C2: "Moderate certainty",
@@ -140,15 +147,37 @@ const trainingQuestions = trainingRows.map((row, index) => {
   }, trainingSeen);
 });
 
+const priorOriginalQuestions = new Set(
+  [...originalRows, ...validationRows].map((row) => row.original_question.replace(/\s+/g, " ").trim())
+);
+const trainingRound3OriginalQuestions = new Set();
+const trainingRound3Questions = trainingRound3Rows.map((row, index) => {
+  if (row.hypothesis_type !== "correct" || row.hypothesis !== row.correct_answer) {
+    throw new Error(`Training Round 3 source ID ${row.id} is not a correct-answer base record.`);
+  }
+  const originalQuestion = row.original_question.replace(/\s+/g, " ").trim();
+  if (priorOriginalQuestions.has(originalQuestion) || trainingRound3OriginalQuestions.has(originalQuestion)) {
+    throw new Error(`Training Round 3 source ID ${row.id} duplicates another original question.`);
+  }
+  trainingRound3OriginalQuestions.add(originalQuestion);
+  return sanitizeQuestion(row, index, {
+    text: row.perturbed_question,
+    statement: row.injected_statement
+  }, trainingRound3Seen);
+});
+
 const serialized = `${JSON.stringify(questions, null, 2)}\n`;
 const trainingSerialized = `${JSON.stringify(trainingQuestions, null, 2)}\n`;
-if (`${serialized}${trainingSerialized}`.includes('"correct_answer"') ||
-    `${serialized}${trainingSerialized}`.includes('"hypothesis_type"')) {
+const trainingRound3Serialized = `${JSON.stringify(trainingRound3Questions, null, 2)}\n`;
+const publicDatasets = `${serialized}${trainingSerialized}${trainingRound3Serialized}`;
+if (publicDatasets.includes('"correct_answer"') || publicDatasets.includes('"hypothesis_type"')) {
   throw new Error("A protected gold-label field leaked into the browser dataset.");
 }
 
 await mkdir(dirname(outputPath), { recursive: true });
 await writeFile(outputPath, serialized, "utf8");
 await writeFile(trainingOutputPath, trainingSerialized, "utf8");
+await writeFile(trainingRound3OutputPath, trainingRound3Serialized, "utf8");
 console.log(`Wrote ${questions.length} test-validation questions to ${outputPath}`);
-console.log(`Wrote ${trainingQuestions.length} training questions to ${trainingOutputPath}`);
+console.log(`Wrote ${trainingQuestions.length} Training Round 1 questions to ${trainingOutputPath}`);
+console.log(`Wrote ${trainingRound3Questions.length} Training Round 3 questions to ${trainingRound3OutputPath}`);

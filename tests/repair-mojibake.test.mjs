@@ -38,6 +38,24 @@ test("training selection is separate from test-validation and excludes requested
   assert.ok(TRAINING_BASE_SOURCE_IDS.every((id) => !validationIds.has(id) && !excludedIds.has(id)));
 });
 
+test("Training Round 3 contains the ten new sanitized base samples", async () => {
+  const questions = JSON.parse(
+    await readFile(new URL("../data/training-round-3-questions.json", import.meta.url), "utf8")
+  );
+  const strings = questions.flatMap((question) => [
+    question.text,
+    question.original_text,
+    question.statement,
+    ...question.options
+  ]);
+
+  assert.equal(questions.length, 10);
+  assert.equal(questions[0].id, "sample_000");
+  assert.equal(questions.at(-1).id, "sample_009");
+  assert.ok(strings.every((value) => repairMojibake(value) === value));
+  assert.ok(questions.every((question) => !Object.hasOwn(question, "correct_answer")));
+});
+
 test("public questions preserve line breaks and contain no mojibake markers", async () => {
   const questions = JSON.parse(await readFile(new URL("../data/questions.json", import.meta.url), "utf8"));
   const strings = questions.flatMap((question) => [

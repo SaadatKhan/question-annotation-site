@@ -1,6 +1,6 @@
 # Annotating Hypothetical Injections
 
-A small research annotation application with a 24-sample training round and a 300-sample test-validation set, all from the base arm. GitHub Pages hosts the interface, a Cloudflare Worker handles username/password authentication, and each annotation is saved directly to a private GitHub results repository.
+A small research annotation application with a 24-sample Training Round 1, a 10-sample Training Round 3, and a 300-sample test-validation set, all from the base arm. GitHub Pages hosts the interface, a Cloudflare Worker handles username/password authentication, and each annotation is saved directly to a private GitHub results repository.
 
 ## Architecture
 
@@ -26,7 +26,9 @@ question-annotation-site/
 |-- admin.html                 Admin-only progress dashboard
 |-- css/style.css              Responsive interface
 |-- data/questions.json        Sanitized test-validation dataset
-|-- data/training-questions.json  Sanitized training dataset
+|-- data/training-questions.json  Sanitized Training Round 1 dataset
+|-- data/training-round-3-questions.json
+|                              Sanitized Training Round 3 dataset
 |-- guidelines/                Public annotation guideline PDF
 |-- js/api.js                  Browser-to-Worker client
 |-- js/config.js               Public application configuration
@@ -44,10 +46,11 @@ Annotations are separated by annotator and study set in the private results repo
 
 ```text
 annotations/<username>/training-round.jsonl
+annotations/<username>/training-round-3.jsonl
 annotations/<username>/test-validation.jsonl
 ```
 
-This separation supports independent inter-annotator agreement calculations for training and test-validation responses. A legacy `annotations/<username>.jsonl` remains readable as test-validation data and is migrated into the nested layout on the user's next save.
+This separation supports independent inter-annotator agreement calculations for each training round and the test-validation responses. A legacy `annotations/<username>.jsonl` remains readable as test-validation data and is migrated into the nested layout on the user's next save.
 
 The first and most recent successful login are stored as:
 
@@ -59,11 +62,13 @@ The annotation workspace opens `guidelines/annotation-guideline-2026-09-17.pdf` 
 
 Each completed sample records a three-level certainty judgment (`C1` Weak, `C2` Moderate, `C3` Strong) and two Yes/No judgments: whether the inserted possibility remains unconfirmed without introducing additional clinical detail, and whether the sentence fits the question. The optional comment and could-not-decide flag are available for every sample. The interface preserves line breaks embedded in question text.
 
-For the test-validation set, `JonathanNebiyu` and `NathanQuan` receive samples 1-150, while `PariKansara` and `HaifaAbdulhamid` receive samples 151-300. For the training round, the same pairs receive samples 1-12 and 13-24 respectively. Administrators receive every sample in both sets. The Worker enforces these ranges in addition to the browser filtering them.
+For the test-validation set, `JonathanNebiyu` and `NathanQuan` receive samples 1-150, while `PariKansara` and `HaifaAbdulhamid` receive samples 151-300. For Training Round 1, the same pairs receive samples 1-12 and 13-24 respectively. In Training Round 3, all four annotators receive all 10 samples. Administrators receive every sample in every set. The Worker enforces these ranges in addition to the browser filtering them.
 
 The public dataset combines the original 270 base records with 30 records selected from `dataset_59_val_base.jsonl`. The added source IDs are recorded in `scripts/question-selection.mjs`; none come from the distractor arm, and source IDs 4, 8, 25, 45, 51, and 54 are explicitly excluded. The selected records are balanced across patient/clinician roles and retain approximately proportional source and certainty classes. Gold answers and source metadata are removed from the browser dataset.
 
-The training round uses 24 different records from `dataset_59_val_base.jsonl`. It does not overlap the 30 added test-validation records and excludes source IDs 24 and 36. Each 12-sample assignment contains six patient and six clinician perspectives with matching source-strength distributions. The exact ordered selection is also recorded in `scripts/question-selection.mjs`.
+Training Round 1 uses 24 different records from `dataset_59_val_base.jsonl`. It does not overlap the 30 added test-validation records and excludes source IDs 24 and 36. Each 12-sample assignment contains six patient and six clinician perspectives with matching source-strength distributions. The exact ordered selection is also recorded in `scripts/question-selection.mjs`.
+
+Training Round 3 uses all 10 records from `dataset_10_val_add_base.jsonl`. The build validates that they are correct-answer base records, do not duplicate prior original questions, repairs source encoding artifacts, strips protected answer metadata from the public file, and assigns every annotator the complete set.
 
 Every save reads the latest annotator file, replaces the record with the same `sample_id`, and commits the updated JSONL file. GitHub write conflicts are fetched and retried twice. Older records remain readable as partial annotations, but a sample counts as complete only after all three current judgments are saved. New records store the displayed and selected certainty levels, the two Yes/No answers, and milliseconds spent on the item.
 

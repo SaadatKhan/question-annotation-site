@@ -41,6 +41,13 @@ assert.ok(Array.isArray(annotations.body.annotations));
 const trainingAnnotations = await request("/api/annotations?dataset=training", { headers: adminHeaders });
 assert.equal(trainingAnnotations.response.status, 200, trainingAnnotations.body.error || "Training annotations failed.");
 assert.ok(Array.isArray(trainingAnnotations.body.annotations));
+const trainingRound3Annotations = await request("/api/annotations?dataset=training-3", { headers: adminHeaders });
+assert.equal(
+  trainingRound3Annotations.response.status,
+  200,
+  trainingRound3Annotations.body.error || "Training Round 3 annotations failed."
+);
+assert.ok(Array.isArray(trainingRound3Annotations.body.annotations));
 
 const dashboard = await request("/api/admin/status?dataset=test-validation", { headers: adminHeaders });
 assert.equal(dashboard.response.status, 200, dashboard.body.error || "Admin dashboard failed.");
@@ -66,6 +73,16 @@ assert.deepEqual(trainingAssignmentByUsername.get("PariKansara"), { start: 13, e
 assert.deepEqual(trainingAssignmentByUsername.get("HaifaAbdulhamid"), { start: 13, end: 24, total: 12 });
 assert.deepEqual(trainingAssignmentByUsername.get("SaadatKhan"), { start: 1, end: 24, total: 24 });
 assert.deepEqual(trainingAssignmentByUsername.get("KevinLybarger"), { start: 1, end: 24, total: 24 });
+const trainingRound3Dashboard = await request("/api/admin/status?dataset=training-3", { headers: adminHeaders });
+assert.equal(
+  trainingRound3Dashboard.response.status,
+  200,
+  trainingRound3Dashboard.body.error || "Training Round 3 dashboard failed."
+);
+assert.equal(trainingRound3Dashboard.body.dataset, "training-3");
+for (const user of trainingRound3Dashboard.body.users) {
+  assert.deepEqual(user.assignment, { start: 1, end: 10, total: 10 });
+}
 const reviewResponses = await request("/api/admin/annotations?dataset=training&username=PariKansara", {
   headers: adminHeaders
 });
@@ -89,30 +106,35 @@ const forbiddenReview = await request("/api/admin/annotations?dataset=training&u
 });
 assert.equal(forbiddenReview.response.status, 403, "Annotator unexpectedly accessed saved-response review.");
 
-const [indexResponse, configResponse, validationDataResponse, trainingDataResponse] = await Promise.all([
+const [indexResponse, configResponse, validationDataResponse, trainingDataResponse, trainingRound3DataResponse] = await Promise.all([
   fetch(`${siteRoot}?smoke=${Date.now()}`),
   fetch(`${siteRoot}js/config.js?smoke=${Date.now()}`),
   fetch(`${siteRoot}data/questions.json?smoke=${Date.now()}`),
-  fetch(`${siteRoot}data/training-questions.json?smoke=${Date.now()}`)
+  fetch(`${siteRoot}data/training-questions.json?smoke=${Date.now()}`),
+  fetch(`${siteRoot}data/training-round-3-questions.json?smoke=${Date.now()}`)
 ]);
 assert.equal(indexResponse.status, 200, "The GitHub Pages login could not be loaded.");
 assert.equal(configResponse.status, 200, "The live site configuration could not be loaded.");
 assert.equal(validationDataResponse.status, 200, "The test-validation dataset could not be loaded.");
 assert.equal(trainingDataResponse.status, 200, "The training dataset could not be loaded.");
-const [indexHtml, siteConfig, validationData, trainingData] = await Promise.all([
+assert.equal(trainingRound3DataResponse.status, 200, "The Training Round 3 dataset could not be loaded.");
+const [indexHtml, siteConfig, validationData, trainingData, trainingRound3Data] = await Promise.all([
   indexResponse.text(),
   configResponse.text(),
   validationDataResponse.json(),
-  trainingDataResponse.json()
+  trainingDataResponse.json(),
+  trainingRound3DataResponse.json()
 ]);
 assert.match(indexHtml, /id="username"/);
 assert.doesNotMatch(indexHtml, /GitHub access token/);
 assert.match(siteConfig, /question-annotation-api\.question-annotation-site\.workers\.dev/);
 assert.equal(validationData.length, 300);
 assert.equal(trainingData.length, 24);
+assert.equal(trainingRound3Data.length, 10);
 
 console.log(
-  `Live smoke tests passed: two datasets, 6 users, assigned ranges, ` +
-  `${annotations.body.annotations.length} test-validation and ${trainingAnnotations.body.annotations.length} training admin annotations, ` +
+  `Live smoke tests passed: three datasets, 6 users, assigned ranges, ` +
+  `${annotations.body.annotations.length} test-validation, ${trainingAnnotations.body.annotations.length} Round 1, and ` +
+  `${trainingRound3Annotations.body.annotations.length} Round 3 admin annotations, ` +
   `${inProgress} in progress, ${notStarted} not started.`
 );

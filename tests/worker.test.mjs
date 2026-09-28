@@ -67,6 +67,7 @@ test("login issues a session without exposing credential data", async () => {
   assert.equal(payload.user.role, "annotator");
   assert.deepEqual(payload.user.assignment, { start: 1, end: 150, total: 150 });
   assert.deepEqual(payload.user.assignments.training, { start: 1, end: 12, total: 12 });
+  assert.deepEqual(payload.user.assignments["training-3"], { start: 1, end: 10, total: 10 });
   assert.deepEqual(payload.user.assignments["test-validation"], { start: 1, end: 150, total: 150 });
   assert.equal(typeof payload.token, "string");
   assert.equal(payload.user.passwordHash, undefined);
@@ -172,6 +173,38 @@ test("training saves use the separate training-round JSONL file", async (context
   assert.equal((await response.json()).annotation.dataset, "training");
   assert.equal(calls.length, 2);
   assert.match(calls[1].url, /annotations\/JonathanNebiyu\/training-round\.jsonl$/);
+});
+
+test("Training Round 3 saves use a separate JSONL file", async (context) => {
+  const { payload } = await login("JonathanNebiyu", "a-strong-user-password");
+  const originalFetch = globalThis.fetch;
+  const calls = [];
+  globalThis.fetch = async (url, options) => {
+    calls.push({ url: String(url), options });
+    if ((options.method || "GET") === "GET") return new Response("{}", { status: 404 });
+    return Response.json({ content: { sha: "saved" } });
+  };
+  context.after(() => { globalThis.fetch = originalFetch; });
+
+  const response = await worker.fetch(request("/api/annotations", {
+    method: "PUT",
+    headers: { Authorization: `Bearer ${payload.token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      dataset: "training-3",
+      sample_id: "sample_009",
+      question_index: 9,
+      certainty_assigned: "C3",
+      certainty_intended: "C3",
+      ms_on_item: 900,
+      is_hypothetical: "yes",
+      fits_naturally: "yes"
+    })
+  }), env);
+
+  assert.equal(response.status, 200);
+  assert.equal((await response.json()).annotation.dataset, "training-3");
+  assert.equal(calls.length, 2);
+  assert.match(calls[1].url, /annotations\/JonathanNebiyu\/training-round-3\.jsonl$/);
 });
 
 test("saving requires a certainty level and both Yes/No answers", async () => {

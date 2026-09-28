@@ -3,7 +3,7 @@ const SESSION_LIFETIME_SECONDS = 12 * 60 * 60;
 const DEFAULT_DATASET_ID = "test-validation";
 const DATASETS = Object.freeze({
   training: Object.freeze({
-    label: "Training Round",
+    label: "Training Round 1",
     totalQuestions: 24,
     fileName: "training-round.jsonl",
     assignments: Object.freeze({
@@ -15,6 +15,21 @@ const DATASETS = Object.freeze({
       nathanquan: Object.freeze({ start: 1, end: 12, total: 12 }),
       parikansara: Object.freeze({ start: 13, end: 24, total: 12 }),
       haifaabdulhamid: Object.freeze({ start: 13, end: 24, total: 12 })
+    })
+  }),
+  "training-3": Object.freeze({
+    label: "Training Round 3",
+    totalQuestions: 10,
+    fileName: "training-round-3.jsonl",
+    assignments: Object.freeze({
+      annotator1: Object.freeze({ start: 1, end: 10, total: 10 }),
+      annotator2: Object.freeze({ start: 1, end: 10, total: 10 }),
+      annotator3: Object.freeze({ start: 1, end: 10, total: 10 }),
+      annotator4: Object.freeze({ start: 1, end: 10, total: 10 }),
+      jonathannebiyu: Object.freeze({ start: 1, end: 10, total: 10 }),
+      nathanquan: Object.freeze({ start: 1, end: 10, total: 10 }),
+      parikansara: Object.freeze({ start: 1, end: 10, total: 10 }),
+      haifaabdulhamid: Object.freeze({ start: 1, end: 10, total: 10 })
     })
   }),
   "test-validation": Object.freeze({

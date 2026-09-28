@@ -6,9 +6,14 @@ window.APP_CONFIG = Object.freeze({
   defaultDatasetId: "test-validation",
   datasets: Object.freeze({
     training: Object.freeze({
-      label: "Training Round",
+      label: "Training Round 1",
       questionsPath: "data/training-questions.json",
       resultsFile: "training-round.jsonl"
+    }),
+    "training-3": Object.freeze({
+      label: "Training Round 3",
+      questionsPath: "data/training-round-3-questions.json",
+      resultsFile: "training-round-3.jsonl"
     }),
     "test-validation": Object.freeze({
       label: "Test-validation set",

@@ -350,7 +350,7 @@
 
       const progressCell = document.createElement("td");
       progressCell.className = "progress-cell round-progress-cell";
-      ["training", "test-validation"].forEach((datasetId) => {
+      Object.keys(config.datasets).forEach((datasetId) => {
         const roundRow = rowsByDataset[datasetId]?.get(user.username);
         if (!roundRow) return;
         const assignment = roundRow.user.assignment;
@@ -407,14 +407,13 @@
     elements.warning.classList.add("hidden");
 
     try {
-      const [trainingData, validationData] = await Promise.all([
-        api.loadAdminStatus("training"),
-        api.loadAdminStatus("test-validation")
-      ]);
-      state.statusByDataset = {
-        training: trainingData,
-        "test-validation": validationData
-      };
+      const datasetIds = Object.keys(config.datasets);
+      const statusPayloads = await Promise.all(
+        datasetIds.map((datasetId) => api.loadAdminStatus(datasetId))
+      );
+      state.statusByDataset = Object.fromEntries(
+        datasetIds.map((datasetId, index) => [datasetId, statusPayloads[index]])
+      );
       const data = state.statusByDataset[state.datasetId];
       state.users = data.users;
       state.datasetId = data.dataset;
