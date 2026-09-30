@@ -75,6 +75,25 @@ Training Round 3 uses all 10 records from `dataset_10_val_add_base.jsonl`. The b
 
 Every save reads the latest annotator file, replaces the record with the same `sample_id`, and commits the updated JSONL file. GitHub write conflicts are fetched and retried twice. Older records remain readable as partial annotations, but a sample counts as complete only after all three current judgments are saved. New records store the displayed and selected certainty levels, the two Yes/No answers, and milliseconds spent on the item.
 
+## Agreement report
+
+Run the reusable agreement report from this repository:
+
+```powershell
+npm.cmd run report:agreement
+```
+
+The command pulls the latest sibling `question-annotation-results` repository and reports every configured training-round pair. Q1 is the percentage of samples where both annotators match the assigned certainty label; Q2 and Q3 are pairwise answer agreement. Scores are withheld until both annotators have completed their shared assignment. When both configured pairs finish a round, the report also prints the pair-averaged score for each question.
+
+Limit the output to one round or pair when useful:
+
+```powershell
+npm.cmd run report:agreement -- --round training-2
+npm.cmd run report:agreement -- --round training-2 --pair JonathanNebiyu NathanQuan
+```
+
+Use `--no-pull` to calculate from the currently downloaded result files without contacting GitHub.
+
 ## Initial setup
 
 Install Node.js 22 or newer, then install the development dependency:

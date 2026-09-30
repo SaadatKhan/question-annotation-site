@@ -12,6 +12,7 @@
     "setup-users": "node worker/scripts/setup-users.mjs",
     "setup-users:auto": "node worker/scripts/setup-users.mjs --generate",
     "test:live": "node worker/scripts/smoke-test.mjs",
+    "report:agreement": "node scripts/agreement-report.mjs",
     "hash-password": "node worker/scripts/hash-password.mjs",
     "test": "node tests/run.mjs"
   },
