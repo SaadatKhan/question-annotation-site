@@ -83,7 +83,7 @@ Run the reusable agreement report from this repository:
 npm.cmd run report:agreement
 ```
 
-The command pulls the latest sibling `question-annotation-results` repository and reports every configured training-round pair. Q1 is the percentage of samples where both annotators match the assigned certainty label; Q2 and Q3 are pairwise answer agreement. Scores are withheld until both annotators have completed their shared assignment. When both configured pairs finish a round, the report also prints the pair-averaged score for each question.
+The command pulls the latest sibling `question-annotation-results` repository and reports every configured training-round pair. Q1 is the percentage of samples where both annotators match the assigned certainty label; Q2 and Q3 are pairwise answer agreement. Scores are withheld until both annotators have completed their shared assignment. When both configured pairs finish a round, the report also prints the pair-averaged score for each question. Plain-text reports are written to the private results repository under `annotation-results/training-round-X.txt`.
 
 Limit the output to one round or pair when useful:
 
@@ -92,7 +92,7 @@ npm.cmd run report:agreement -- --round training-2
 npm.cmd run report:agreement -- --round training-2 --pair JonathanNebiyu NathanQuan
 ```
 
-Use `--no-pull` to calculate from the currently downloaded result files without contacting GitHub.
+Use `--no-pull` to calculate from the currently downloaded result files without contacting GitHub. Use `--no-write` when console output is sufficient, or `--output-dir <path>` to choose another report folder.
 
 ## Initial setup
 

@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -16,6 +16,7 @@ const rounds = Object.freeze({
   training: Object.freeze({
     label: "Training Round 1",
     fileName: "training-round.jsonl",
+    reportFile: "training-round-1.txt",
     assignments: Object.freeze({
       JonathanNebiyu: Object.freeze({ start: 1, end: 12 }),
       NathanQuan: Object.freeze({ start: 1, end: 12 }),
@@ -26,6 +27,7 @@ const rounds = Object.freeze({
   "training-2": Object.freeze({
     label: "Training Round 2",
     fileName: "training-round-2.jsonl",
+    reportFile: "training-round-2.txt",
     assignments: Object.freeze({
       JonathanNebiyu: Object.freeze({ start: 13, end: 24 }),
       NathanQuan: Object.freeze({ start: 13, end: 24 }),
@@ -36,6 +38,7 @@ const rounds = Object.freeze({
   "training-3": Object.freeze({
     label: "Training Round 3",
     fileName: "training-round-3.jsonl",
+    reportFile: "training-round-3.txt",
     assignments: Object.freeze({
       JonathanNebiyu: Object.freeze({ start: 1, end: 10 }),
       NathanQuan: Object.freeze({ start: 1, end: 10 }),
@@ -65,7 +68,9 @@ function usage() {
     "  --round <training|training-2|training-3>  Report one round",
     "  --pair <username1> <username2>            Report one configured pair",
     "  --results-dir <path>                      Use another local results repository",
+    "  --output-dir <path>                       Write reports to another folder",
     "  --no-pull                                 Use local files without pulling GitHub",
+    "  --no-write                                Print without writing report files",
     "  --help                                    Show this help"
   ].join("\n");
 }
@@ -73,15 +78,20 @@ function usage() {
 function parseArguments(argv) {
   const options = {
     pull: true,
+    write: true,
     resultsDirectory: defaultResultsDirectory,
+    outputDirectory: "",
     roundIds: Object.keys(rounds),
-    pairs: configuredPairs
+    pairs: configuredPairs,
+    customPair: false
   };
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
     if (argument === "--help") return { ...options, help: true };
     if (argument === "--no-pull") {
       options.pull = false;
+    } else if (argument === "--no-write") {
+      options.write = false;
     } else if (argument === "--round") {
       const requested = argv[++index];
       const roundId = roundAliases[requested] || requested;
@@ -92,13 +102,21 @@ function parseArguments(argv) {
       const right = argv[++index];
       if (!left || !right) throw new Error("--pair requires two usernames.");
       options.pairs = [[left, right]];
+      options.customPair = true;
     } else if (argument === "--results-dir") {
       const requested = argv[++index];
       if (!requested) throw new Error("--results-dir requires a path.");
       options.resultsDirectory = resolve(requested);
+    } else if (argument === "--output-dir") {
+      const requested = argv[++index];
+      if (!requested) throw new Error("--output-dir requires a path.");
+      options.outputDirectory = resolve(requested);
     } else {
       throw new Error(`Unknown option: ${argument}`);
     }
+  }
+  if (!options.outputDirectory) {
+    options.outputDirectory = resolve(options.resultsDirectory, "annotation-results");
   }
   return options;
 }
@@ -179,7 +197,7 @@ function formatPercentage(value) {
   return `${value.toFixed(1)}%`;
 }
 
-function renderTable(rows) {
+function formatTable(rows) {
   const headers = ["Round", "Annotator pair", "Progress", "Q1", "Q2", "Q3"];
   const values = rows.map((row) => [
     row.round,
@@ -194,9 +212,11 @@ function renderTable(rows) {
     ...values.map((row) => row[column].length)
   ));
   const line = (row) => row.map((value, column) => value.padEnd(widths[column])).join("  ");
-  console.log(line(headers));
-  console.log(widths.map((width) => "-".repeat(width)).join("  "));
-  values.forEach((row) => console.log(line(row)));
+  return [
+    line(headers),
+    widths.map((width) => "-".repeat(width)).join("  "),
+    ...values.map(line)
+  ].join("\n");
 }
 
 function analyzeRound(roundId, pair, resultsDirectory) {
@@ -232,24 +252,54 @@ function analyzeRound(roundId, pair, resultsDirectory) {
   };
 }
 
-function renderRoundAverages(rows) {
+function calculateRoundAverages(rows) {
   const averages = [];
   for (const roundId of new Set(rows.map((row) => row.roundId))) {
     const roundRows = rows.filter((row) => row.roundId === roundId);
     if (roundRows.length !== configuredPairs.length || roundRows.some((row) => !row.scores)) continue;
     const average = (field) => roundRows.reduce((sum, row) => sum + row.scores[field], 0) / roundRows.length;
     averages.push({
+      roundId,
       round: rounds[roundId].label,
       q1: average("q1"),
       q2: average("q2"),
       q3: average("q3")
     });
   }
-  if (!averages.length) return;
-  console.log("\nPair-averaged scores:");
-  averages.forEach((row) => {
-    console.log(`${row.round}: Q1 ${formatPercentage(row.q1)}, Q2 ${formatPercentage(row.q2)}, Q3 ${formatPercentage(row.q3)}`);
-  });
+  return averages;
+}
+
+function formatAverage(row) {
+  return `${row.round}: Q1 ${formatPercentage(row.q1)}, Q2 ${formatPercentage(row.q2)}, Q3 ${formatPercentage(row.q3)}`;
+}
+
+function reportText(roundId, rows, average, customPair) {
+  const lines = [
+    `${rounds[roundId].label} Agreement Report`,
+    "",
+    "Q1: both annotators match the assigned certainty label.",
+    "Q2 and Q3: both annotators select the same answer.",
+    "",
+    formatTable(rows)
+  ];
+  if (average) lines.push("", "Pair-averaged scores:", formatAverage(average));
+  if (customPair) lines.push("", "This report contains the requested custom annotator pair.");
+  return `${lines.join("\n")}\n`;
+}
+
+function writeReports(options, rows, averages) {
+  mkdirSync(options.outputDirectory, { recursive: true });
+  for (const roundId of options.roundIds) {
+    const roundRows = rows.filter((row) => row.roundId === roundId);
+    const average = averages.find((row) => row.roundId === roundId);
+    const baseName = rounds[roundId].reportFile.replace(/\.txt$/, "");
+    const pairSuffix = options.customPair
+      ? `-${options.pairs[0].map((name) => name.toLowerCase()).join("-")}`
+      : "";
+    const path = resolve(options.outputDirectory, `${baseName}${pairSuffix}.txt`);
+    writeFileSync(path, reportText(roundId, roundRows, average, options.customPair), "utf8");
+    console.log(`Saved ${path}`);
+  }
 }
 
 async function main() {
@@ -267,8 +317,13 @@ async function main() {
   );
   console.log("\nQ1: both annotators match the assigned certainty label.");
   console.log("Q2 and Q3: both annotators select the same answer.\n");
-  renderTable(rows);
-  if (options.pairs === configuredPairs) renderRoundAverages(rows);
+  console.log(formatTable(rows));
+  const averages = options.customPair ? [] : calculateRoundAverages(rows);
+  if (averages.length) {
+    console.log("\nPair-averaged scores:");
+    averages.forEach((row) => console.log(formatAverage(row)));
+  }
+  if (options.write) writeReports(options, rows, averages);
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
