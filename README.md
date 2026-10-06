@@ -94,6 +94,18 @@ npm.cmd run report:agreement -- --round training-2 --pair JonathanNebiyu NathanQ
 
 Use `--no-pull` to calculate from the currently downloaded result files without contacting GitHub. Use `--no-write` when console output is sufficient, or `--output-dir <path>` to choose another report folder.
 
+## Test-validation reliability report
+
+Run the reliability report after annotators have saved new test-validation work:
+
+```powershell
+npm.cmd run report:reliability
+```
+
+The command pulls the latest private results and uses only samples completed by both annotators in an assigned pair. It reports ordinal Krippendorff's alpha for the selected certainty level, an intended-versus-chosen 3x3 table, and percent agreement, number of No ratings, and PABAK for each binary question. The same output is saved privately as `annotation-results/test-validation-reliability.txt`.
+
+Use `--no-pull` to calculate from the local result files, `--no-write` for console-only output, `--results-dir <path>` for another results repository, or `--output <path>` for another report file.
+
 ## Initial setup
 
 Install Node.js 22 or newer, then install the development dependency:

@@ -13,6 +13,7 @@
     "setup-users:auto": "node worker/scripts/setup-users.mjs --generate",
     "test:live": "node worker/scripts/smoke-test.mjs",
     "report:agreement": "node scripts/agreement-report.mjs",
+    "report:reliability": "node scripts/reliability-report.mjs",
     "hash-password": "node worker/scripts/hash-password.mjs",
     "test": "node tests/run.mjs"
   },
